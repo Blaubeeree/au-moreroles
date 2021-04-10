@@ -9,6 +9,7 @@ hook.Add("OnGamemodeLoaded", "InitRoleBase", function()
     AddCSLuaFile("rolebase/sh_role_module.lua")
     AddCSLuaFile("includes/modules/roles.lua")
     -- include all serverside scripts
+    include("rolebase/sv_roleselection.lua")
     -- add all resources if we need any
     -- resource.AddWorkshop("cooleWorkshopID")
   end
