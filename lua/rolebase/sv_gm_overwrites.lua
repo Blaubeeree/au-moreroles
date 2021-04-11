@@ -70,55 +70,11 @@
       end
     end
 
-    -- Shuffle.
-    -- local memo = {}
-    -- table.sort(GAMEMODE.GameData.PlayerTables, function(a, b)
-    --   -- I use this for testing.
-    --   -- Ignore.
-    --   -- if not a.entity\IsBot!
-    --   --	memo[a] = 1
-    --   -- if not b.entity\IsBot!
-    --   -- 	memo[b] = 1
-    --   if not memo[a] then
-    --     if GAMEMODE.PlayersMarkedForImposter[a.entity] then
-    --       memo[a] = math.random() + 1
-    --     elseif GAMEMODE.PlayersMarkedForCrew[a.entity] then
-    --       memo[a] = math.random() - 1
-    --     else
-    --       memo[a] = math.random()
-    --     end
-    --   end
-    --   if not memo[b] then
-    --     if GAMEMODE.PlayersMarkedForImposter[b.entity] then
-    --       memo[b] = math.random() + 1
-    --     elseif GAMEMODE.PlayersMarkedForCrew[b.entity] then
-    --       memo[b] = math.random() - 1
-    --     else
-    --       memo[b] = math.random()
-    --     end
-    --   end
-    --   return memo[a] > memo[b]
-    -- end)
-    -- GAMEMODE.PlayersMarkedForCrew = {}
-    -- GAMEMODE.PlayersMarkedForImposter = {}
-    -- local imposterCount = math.min(GAMEMODE.ConVarSnapshots.ImposterCount:GetInt(), GAMEMODE:GetImposterCount(#initializedPlayers))
     for index, ply in ipairs(GAMEMODE.GameData.PlayerTables) do
-      --   if index <= imposterCount then
-      --     GAMEMODE.GameData.Imposters[ply] = true
-      --   end
       ply.entity:Freeze(true)
       ply.entity:SetNWInt("NMW AU Meetings", GAMEMODE.ConVarSnapshots.MeetingsPerPlayer:GetInt())
     end
 
-    -- -- Shuffle the player table one more time.
-    -- -- We don't want to broadcast the previous table
-    -- -- since it'd reveal the imposters right away.
-    -- memo = {}
-    -- table.sort(GAMEMODE.GameData.PlayerTables, function(a, b)
-    --   memo[a] = memo[a] or math.random()
-    --   memo[b] = memo[b] or math.random()
-    --   return memo[a] > memo[b]
-    -- end)
     roleselection.SelectRoles()
     -- Assign colors to players in rounds.
     local colorRounds = math.ceil(#GAMEMODE.GameData.PlayerTables / #GAMEMODE.Colors)
@@ -164,7 +120,7 @@
     GAMEMODE:SetGameInProgress(true)
     GAMEMODE:Net_BroadcastGameStart()
     GAMEMODE.Logger.Info("Starting the game with " .. tostring(#GAMEMODE.GameData.PlayerTables) .. " players")
-    GAMEMODE.Logger.Info("There are " .. tostring(#GAMEMODE.GameData.Imposters) .. " imposter(s) among them")
+    GAMEMODE.Logger.Info("There are " .. tostring(table.Count(GAMEMODE.GameData.Imposters)) .. " imposter(s) among them")
 
     -- Start the game after a dramatic pause.
     -- Teleport players while they're staring at the splash screen.

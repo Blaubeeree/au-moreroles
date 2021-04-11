@@ -12,7 +12,6 @@ function roleselection.GetSelectableBaseRoles(update)
     end
   end
 
-  PrintTable(selectableRoles)
   roleselection.selectableBaseRoles = selectableRoles
 
   return selectableRoles
