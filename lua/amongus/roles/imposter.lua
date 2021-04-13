@@ -1,9 +1,9 @@
 ﻿roles.CreateTeam(ROLE.name, {
-  id = 2,
+  id = TEAM_IMPOSTER,
   color = Color(255, 0, 0)
 })
 
-ROLE.id = 2
+ROLE.id = ROLE_IMPOSTER
 ROLE.color = Color(255, 0, 0)
 ROLE.defaultTeam = TEAM_IMPOSTER
 ROLE.CanKill = true

@@ -1,8 +1,8 @@
 ﻿roles.CreateTeam(ROLE.name, {
-  id = 1,
-  color = Color(255, 255, 255)
+  id = TEAM_CREWMATE,
+  color = Color(130, 250, 250)
 })
 
-ROLE.id = 1
-ROLE.color = Color(255, 255, 255)
+ROLE.id = ROLE_CREWMATE
+ROLE.color = Color(130, 250, 250)
 ROLE.defaultTeam = TEAM_CREWMATE
