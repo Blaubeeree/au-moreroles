@@ -35,3 +35,9 @@ for _, folder in ipairs(rolesFolders) do
 end
 
 ROLE = nil
+
+for _, role in pairs(roles.GetList()) do
+  if role.Initialize then
+    role:Initialize()
+  end
+end

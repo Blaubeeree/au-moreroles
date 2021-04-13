@@ -1,4 +1,4 @@
-module("roles", package.seeall)
+﻿module("roles", package.seeall)
 _G.ROLE_CREWMATE = 1
 _G.TEAM_CREWMATE = 1
 _G.ROLE_IMPOSTER = 2
@@ -77,6 +77,7 @@ function Register(name, data)
   RolesByName[name] = data
   SetupGlobals(data)
   SetupConvars(data)
+  GAMEMODE.Logger.Info("Added '" .. data.name .. "' role (ID: " .. data.id .. ")")
 end
 
 function CreateTeam(name, data)
@@ -85,6 +86,22 @@ function CreateTeam(name, data)
   _G["TEAM_" .. string.upper(name)] = data.id
   TeamsByName[name] = data
   TeamsByID[data.id] = data
+end
+
+function SetBaseRole(roleTable, baserole)
+  baserole = RolesByID[baserole] or baserole
+
+  if roleTable.baserole then
+    GAMEMODE.Logger.Error("BaseRole of " .. roleTable.name .. " already set (" .. roleTable.baserole.name .. ")!")
+  elseif roleTable.id == baserole.id then
+    GAMEMODE.Logger.Error("BaseRole " .. roleTable.name .. " can't be a baserole of itself!")
+  elseif baserole.baserole then
+    GAMEMODE.Logger.Error("Your requested BaseRole can't be any BaseRole of another SubRole because it's a SubRole as well.")
+  else
+    roleTable.baserole = baserole
+    roleTable.defaultTeam = baserole.defaultTeam
+    GAMEMODE.Logger.Info("Connected '" .. roleTable.name .. "' subrole with baserole '" .. baserole.name .. "'")
+  end
 end
 
 function GetList()
