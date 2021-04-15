@@ -6,3 +6,4 @@
 ROLE.id = ROLE_CREWMATE
 ROLE.color = Color(130, 250, 250)
 ROLE.defaultTeam = TEAM_CREWMATE
+ROLE.ShowTeammates = false

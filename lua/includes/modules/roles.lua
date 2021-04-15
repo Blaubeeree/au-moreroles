@@ -14,7 +14,8 @@ local defaultSettings = {
   CanKill = false,
   CanSabotage = false,
   CanVent = false,
-  HasTasks = true
+  HasTasks = true,
+  ShowTeammates = true
 }
 
 local function GenerateRoleID()
@@ -70,7 +71,9 @@ function Register(name, data)
   if RolesByID[data.id] then return end
 
   for k, v in pairs(defaultSettings) do
-    data[k] = data[k] or v
+    if data[k] == nil then
+      data[k] = v
+    end
   end
 
   RolesByID[data.id] = data
@@ -118,4 +121,12 @@ end
 
 function GetByID(id)
   return RolesByID[id]
+end
+
+function GetTeamByName(name)
+  return TeamsByName[name]
+end
+
+function GetTeamByID(id)
+  return TeamsByID[id]
 end

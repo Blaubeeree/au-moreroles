@@ -1,7 +1,9 @@
-roleselection = roleselection or {}
+﻿roleselection = roleselection or {}
 roleselection.selectableRoles = roleselection.selectableRoles or {}
 roleselection.roles = roleselection.roles or {}
 roleselection.teams = roleselection.teams or {}
+util.AddNetworkString("AU SendRole")
+util.AddNetworkString("AU PurgeRoleselectionData")
 
 local function GetSelectableRoles(update)
   if not update and not table.Empty(roleselection.selectableRoles) then return roleselection.selectableRoles end
@@ -47,12 +49,37 @@ local function UpgradeRoles(plys, baserole)
   end
 end
 
+local function BroadcastRoles()
+  for _, ply in ipairs(GAMEMODE.GameData.PlayerTables) do
+    ply = ply.entity
+    local role = roleselection.roles[ply]
+    local team = roleselection.teams[ply]
+    local teammates = {}
+
+    if role.ShowTeammates then
+      for _, ply2 in ipairs(GAMEMODE.GameData.PlayerTables) do
+        ply2 = ply2.entity
+
+        if roleselection.teams[ply2] == team then
+          teammates[ply2] = roleselection.roles[ply2].id
+        end
+      end
+    end
+
+    net.Start("AU SendRole")
+    net.WriteTable(teammates)
+    net.WriteUInt(role.id, 8)
+    net.WriteUInt(team.id, 8)
+    net.Send(ply)
+  end
+end
+
 function roleselection.GetSelectableRoles()
   GetSelectableRoles(false)
 end
 
 function roleselection.SetRole(ply, role)
-  SetRole(ply,role)
+  SetRole(ply, role)
   BroadcastRoles()
 end
 
@@ -62,6 +89,7 @@ function roleselection.SetTeam(ply, team)
   elseif type(ply) ~= "Player" then
     return
   end
+
   roleselection.teams[ply] = team
   BroadcastRoles()
 end
@@ -106,6 +134,8 @@ function roleselection.SelectRoles(plyTables)
   end
 
   UpgradeRoles(plyTables, CREWMATE)
+  -- tell everyone who their teammates are
+  BroadcastRoles()
 end
 
 hook.Add("GMAU GameEnd", "PurgeRoleselectionData", function()
@@ -116,4 +146,7 @@ hook.Add("GMAU GameEnd", "PurgeRoleselectionData", function()
       roleselection[k] = nil
     end
   end
+
+  net.Start("AU PurgeRoleselectionData")
+  net.Broadcast()
 end)

@@ -1,4 +1,4 @@
-local plymeta = FindMetaTable("Player")
+﻿local plymeta = FindMetaTable("Player")
 
 function plymeta:GetRole()
   return roleselection.roles[self]
