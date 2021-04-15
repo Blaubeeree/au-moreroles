@@ -1,6 +1,7 @@
-﻿roleselection = roleselection or {}
+roleselection = roleselection or {}
 roleselection.selectableRoles = roleselection.selectableRoles or {}
 roleselection.roles = roleselection.roles or {}
+roleselection.teams = roleselection.teams or {}
 
 local function GetSelectableRoles(update)
   if not update and not table.Empty(roleselection.selectableRoles) then return roleselection.selectableRoles end
@@ -24,6 +25,15 @@ local function GetSelectableRoles(update)
   return selectableRoles
 end
 
+local function SetRole(ply, role)
+  roleselection.roles[ply.entity] = role
+  roleselection.teams[ply.entity] = roles.GetTeamByID(role.defaultTeam)
+
+  if role == IMPOSTER then
+    GAMEMODE.GameData.Imposters[ply] = true
+  end
+end
+
 local function UpgradeRoles(plys, baserole)
   for id, amount in RandomPairs(roleselection.selectableRoles) do
     local role = roles.GetByID(id)
@@ -31,7 +41,7 @@ local function UpgradeRoles(plys, baserole)
 
     while amount > 0 and #plys > 0 do
       local ply = plys[math.random(#plys)]
-      roleselection.roles[ply] = role
+      SetRole(ply, role)
       amount = amount - 1
     end
   end
@@ -39,6 +49,21 @@ end
 
 function roleselection.GetSelectableRoles()
   GetSelectableRoles(false)
+end
+
+function roleselection.SetRole(ply, role)
+  SetRole(ply,role)
+  BroadcastRoles()
+end
+
+function roleselection.SetTeam(ply, team)
+  if type(ply.entity) == "Player" then
+    ply = ply.entity
+  elseif type(ply) ~= "Player" then
+    return
+  end
+  roleselection.teams[ply] = team
+  BroadcastRoles()
 end
 
 function roleselection.SelectRoles(plyTables)
@@ -50,8 +75,7 @@ function roleselection.SelectRoles(plyTables)
   while selectableRoles[ROLE_IMPOSTER] > 0 and #plyTables > 0 do
     local plyKey = math.random(#plyTables)
     local ply = plyTables[plyKey]
-    roleselection.roles[ply] = IMPOSTER
-    GAMEMODE.GameData.Imposters[ply] = true
+    SetRole(ply, IMPOSTER)
     selectableRoles[ROLE_IMPOSTER] = selectableRoles[ROLE_IMPOSTER] - 1
     table.remove(plyTables, plyKey)
   end
@@ -67,7 +91,7 @@ function roleselection.SelectRoles(plyTables)
     while amount > 0 and #plyTables > 0 do
       local plyKey = math.random(#plyTables)
       local ply = plyTables[plyKey]
-      roleselection.roles[ply] = role
+      SetRole(ply, role)
       amount = amount - 1
       table.insert(baseRolePlys, ply)
       table.remove(plyTables, plyKey)
@@ -78,7 +102,7 @@ function roleselection.SelectRoles(plyTables)
 
   -- set all remaining players crewmate
   for _, ply in ipairs(plyTables) do
-    roleselection.roles[ply] = CREWMATE
+    SetRole(ply, CREWMATE)
   end
 
   UpgradeRoles(plyTables, CREWMATE)
