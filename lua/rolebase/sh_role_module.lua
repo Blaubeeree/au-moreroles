@@ -6,6 +6,7 @@ local _, rolesFolders = file.Find(rolesPath .. "*", "LUA")
 for _, fl in ipairs(rolesFiles) do
   ROLE = {}
   ROLE.name = string.sub(fl, 0, #fl - 4)
+  AddCSLuaFile(rolesPath .. fl)
   include(rolesPath .. fl)
   roles.Register(ROLE.name, ROLE)
 end
