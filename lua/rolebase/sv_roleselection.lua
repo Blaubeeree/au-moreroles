@@ -2,6 +2,7 @@
 roleselection.selectableRoles = roleselection.selectableRoles or {}
 roleselection.roles = roleselection.roles or {}
 roleselection.teams = roleselection.teams or {}
+local forcedRoles = forcedRoles or {}
 util.AddNetworkString("AU SendRole")
 util.AddNetworkString("AU PurgeRoleselectionData")
 
@@ -12,8 +13,8 @@ local function GetSelectableRoles(update)
   local selectableRoles = {}
 
   for _, role in pairs(roleList) do
-    if role.id == ROLE_IMPOSTER
-      or (role.id ~= ROLE_CREWMATE
+    if role == IMPOSTER
+      or (role ~= CREWMATE
       and role.cvars.enabled:GetBool()
       and role.cvars.minPlayers:GetInt() <= plyCount
       and role.cvars.random:GetInt() >= math.random(100))
@@ -74,6 +75,10 @@ local function BroadcastRoles()
   end
 end
 
+function roleselection.ForceRole(ply, role)
+  forcedRoles[ply] = role
+end
+
 function roleselection.GetSelectableRoles()
   GetSelectableRoles(false)
 end
@@ -98,6 +103,27 @@ function roleselection.SelectRoles(plyTables)
   if GAMEMODE:IsGameInProgress() then return end
   plyTables = plyTables or table.Add({}, GAMEMODE.GameData.PlayerTables)
   local selectableRoles = GetSelectableRoles(true)
+
+  -- select forced roles
+  for ply, role in pairs(forcedRoles) do
+    local plyTable = ply:GetAUPlayerTable()
+    local plyKey = table.KeyFromValue(plyTables, plyTable)
+
+    -- enable role if role disabled because of randomness
+    if not selectableRoles[role.id] and role ~= CREWMATE then
+      local plyCount = #player.GetAll()
+      if not role.cvars.enabled:GetBool() and role.cvars.minPlayers:GetInt() > plyCount then continue end
+      selectableRoles[role.id] = math.min(role.cvars.max:GetInt(), math.floor(role.cvars.pct:GetFloat() * plyCount))
+    end
+
+    if (selectableRoles[role.id] > 0 or role == CREWMATE) and plyKey then
+      SetRole(plyTable, role)
+      selectableRoles[role.id] = selectableRoles[role.id] - 1
+      table.remove(plyTables, plyKey)
+    end
+  end
+
+  forcedRoles = {}
 
   -- select imposters
   while selectableRoles[ROLE_IMPOSTER] > 0 and #plyTables > 0 do

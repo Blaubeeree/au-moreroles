@@ -180,3 +180,15 @@
     end)
   end)
 end
+
+function GAMEMODE:Player_MarkCrew(ply)
+  roleselection.ForceRole(ply, CREWMATE)
+end
+
+function GAMEMODE:Player_MarkImposter(ply)
+  roleselection.ForceRole(ply, IMPOSTER)
+end
+
+function GAMEMODE:Player_UnMark(ply)
+  roleselection.ForceRole(ply, nil)
+end
