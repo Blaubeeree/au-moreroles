@@ -192,3 +192,25 @@ end
 function GAMEMODE:Player_UnMark(ply)
   roleselection.ForceRole(ply, nil)
 end
+
+util.AddNetworkString("AU RevealRoles")
+local oldBroadcastGameOver = GAMEMODE.Net_BroadcastGameOver
+
+function GAMEMODE:Net_BroadcastGameOver(reason)
+  local roles = {}
+  local teams = {}
+
+  for ply, role in pairs(roleselection.roles) do
+    roles[ply] = role.id
+  end
+
+  for ply, team in pairs(roleselection.teams) do
+    teams[ply] = team.id
+  end
+
+  net.Start("AU RevealRoles")
+  net.WriteTable(roles)
+  net.WriteTable(teams)
+  net.Broadcast()
+  oldBroadcastGameOver(self, reason)
+end
