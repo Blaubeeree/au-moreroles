@@ -1,8 +1,8 @@
 ﻿module("roles", package.seeall)
-_G.ROLE_CREWMATE = 1
-_G.TEAM_CREWMATE = 1
-_G.ROLE_IMPOSTER = 2
-_G.TEAM_IMPOSTER = 2
+_G.ROLE_IMPOSTER = 1
+_G.TEAM_IMPOSTER = 1
+_G.ROLE_CREWMATE = 2
+_G.TEAM_CREWMATE = 2
 local RolesByName = RolesByName or {}
 local RolesByID = RolesByID or {}
 local TeamsByName = TeamsByName or {}
