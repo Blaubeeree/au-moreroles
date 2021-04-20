@@ -1,4 +1,4 @@
-﻿roleselection = roleselection or {}
+roleselection = roleselection or {}
 roleselection.selectableRoles = roleselection.selectableRoles or {}
 roleselection.roles = roleselection.roles or {}
 roleselection.teams = roleselection.teams or {}
@@ -32,7 +32,7 @@ local function SetRole(ply, role)
   roleselection.roles[ply.entity] = role
   roleselection.teams[ply.entity] = roles.GetTeamByID(role.defaultTeam)
 
-  if role == IMPOSTER then
+  if role == IMPOSTER or role.baserole == IMPOSTER then
     GAMEMODE.GameData.Imposters[ply] = true
   end
 end
@@ -108,6 +108,14 @@ function roleselection.SelectRoles(plyTables)
   for ply, role in pairs(forcedRoles) do
     local plyTable = ply:GetAUPlayerTable()
     local plyKey = table.KeyFromValue(plyTables, plyTable)
+    local base = role.baserole
+
+    -- enable baserole if role disabled because of randomness
+    if base and not selectableRoles[base.id] and base ~= CREWMATE then
+      local plyCount = #player.GetAll()
+      if not base.cvars.enabled:GetBool() and base.cvars.minPlayers:GetInt() > plyCount then continue end
+      selectableRoles[base.id] = math.min(base.cvars.max:GetInt(), math.floor(base.cvars.pct:GetFloat() * plyCount))
+    end
 
     -- enable role if role disabled because of randomness
     if not selectableRoles[role.id] and role ~= CREWMATE then
@@ -116,8 +124,13 @@ function roleselection.SelectRoles(plyTables)
       selectableRoles[role.id] = math.min(role.cvars.max:GetInt(), math.floor(role.cvars.pct:GetFloat() * plyCount))
     end
 
-    if (selectableRoles[role.id] > 0 or role == CREWMATE) and plyKey then
+    if (not base or selectableRoles[base.id] > 0 or base == CREWMATE) and (selectableRoles[role.id] > 0 or role == CREWMATE) and plyKey then
       SetRole(plyTable, role)
+
+      if base then
+        selectableRoles[base.id] = selectableRoles[base.id] - 1
+      end
+
       selectableRoles[role.id] = selectableRoles[role.id] - 1
       table.remove(plyTables, plyKey)
     end
