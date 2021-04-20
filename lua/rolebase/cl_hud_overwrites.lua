@@ -1,4 +1,4 @@
-﻿GM = GAMEMODE
+GM = GAMEMODE
 local VGUI_HUD = include("amongus/gamemode/vgui/vgui_hud.lua")
 local VGUI_SPLASH = include("amongus/gamemode/vgui/vgui_splash.lua")
 GM = nil
@@ -22,6 +22,7 @@ local COLOR_YELLOW = Color(255, 255, 30)
 function VGUI_HUD:SetupButtons(state, impostor)
   local localPlayerTable = GAMEMODE.GameData.Lookup_PlayerByEntity[LocalPlayer()]
   local localPlayerRole = LocalPlayer():GetRole()
+  local localPlayerTeam = LocalPlayer():GetTeam()
 
   for _, v in ipairs(self.buttons:GetChildren()) do
     v:Remove()
@@ -292,7 +293,7 @@ function VGUI_HUD:SetupButtons(state, impostor)
   taskLabel = taskBoxTitle:Add("DOutlinedLabel")
   taskLabel:Dock(LEFT)
   local key = string.upper(input.LookupBinding("gmod_undo") or "?")
-  local text = "(" .. tostring(key) .. ") " .. tostring(TRANSLATE(impostor and "hud.fakeTasks" or "hud.tasks"))
+  local text = "(" .. tostring(key) .. ") " .. tostring(TRANSLATE(localPlayerRole.HasTasks and "hud.tasks" or "hud.fakeTasks"))
   taskLabel:SetText("  " .. tostring(text) .. "  ")
   taskLabel:SetFont("NMW AU Taskbar")
   taskLabel:SetContentAlignment(5)
@@ -417,7 +418,7 @@ function VGUI_HUD:SetupButtons(state, impostor)
 
         if GAMEMODE.GameData.KillCooldown >= CurTime() then
           alpha = 32
-        elseif IsValid(GAMEMODE.KillHighlight) and not GAMEMODE.GameData.Imposters[GAMEMODE.KillHighlight] then
+        elseif IsValid(GAMEMODE.KillHighlight) and GAMEMODE.KillHighlight:GetTeam() ~= localPlayerTeam then
           alpha = 255
         else
           alpha = 32
@@ -466,7 +467,7 @@ function VGUI_HUD:SetupButtons(state, impostor)
     modelEntity:SetAngles(Angle(0, 90, 0))
     modelEntity:SetPos(modelEntity:GetPos() - Vector(0, 0, 4))
     model.LayoutEntity = function() end
-    local textColor = GAMEMODE.GameData.Imposters[localPlayerTable] and Color(255, 32, 32) or Color(255, 255, 255)
+    local textColor = localPlayerRole.color
     local model_oldPaint = model.Paint
 
     model.Paint = function(_, w, h)
