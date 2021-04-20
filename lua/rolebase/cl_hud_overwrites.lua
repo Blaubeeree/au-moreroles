@@ -1,12 +1,499 @@
 ﻿GM = GAMEMODE
+local VGUI_HUD = include("amongus/gamemode/vgui/vgui_hud.lua")
 local VGUI_SPLASH = include("amongus/gamemode/vgui/vgui_splash.lua")
 GM = nil
+
+local MAT_BUTTONS = {
+  kill = Material("au/gui/hudbuttons/kill.png"),
+  use = Material("au/gui/hudbuttons/use.png"),
+  report = Material("au/gui/hudbuttons/report.png"),
+  vent = Material("au/gui/hudbuttons/vent.png")
+}
+
 local TRANSLATE = GAMEMODE.Lang.GetEntry
 local SHUT_TIME = 3
 local ROTATION_MATRIX = Matrix()
-local splash = {}
+local COLOR_WHITE = Color(255, 255, 255)
+local COLOR_BLACK = Color(0, 0, 0)
+local COLOR_RED = Color(220, 32, 32)
+local COLOR_GREEN = Color(32, 255, 32)
+local COLOR_YELLOW = Color(255, 255, 30)
 
-function splash:DisplayPlayers(reason)
+function VGUI_HUD:SetupButtons(state, impostor)
+  local localPlayerTable = GAMEMODE.GameData.Lookup_PlayerByEntity[LocalPlayer()]
+  local localPlayerRole = LocalPlayer():GetRole()
+
+  for _, v in ipairs(self.buttons:GetChildren()) do
+    v:Remove()
+  end
+
+  self.buttons:SetAlpha(0)
+  self.buttons:AlphaTo(255, 2)
+
+  if state == GAMEMODE.GameState.Preparing then
+    -- The convar list.
+    local cvarlist = self:Add("Panel")
+    local m = ScrW() * 0.01
+    cvarlist:DockMargin(m, m, m, m)
+    cvarlist:SetWide(ScrW() * 0.35)
+    cvarlist:Dock(LEFT)
+
+    cvarlist.Paint = function()
+      surface.SetFont("NMW AU Taskbar")
+      local tW, tH = surface.GetTextSize("A")
+      local conVars = GAMEMODE:IsGameCommencing() and GAMEMODE.ConVarSnapshots or GAMEMODE.ConVars
+      local i = 0
+
+      for categoryId, category in ipairs(GAMEMODE.ConVarsDisplay) do
+        local _list_1 = category.ConVars
+
+        for _, conVarTable in ipairs(category.ConVars) do
+          local type = conVarTable[1]
+          local conVar = conVars[conVarTable[2]]
+          local conVarName = conVar:GetName()
+          local value
+
+          if "Int" == type then
+            value = conVar:GetInt()
+          elseif "Time" == type then
+            value = TRANSLATE("hud.cvar.time")(conVar:GetInt())
+          elseif "String" == type then
+            value = conVar:GetString()
+          elseif "Bool" == type then
+            value = conVar:GetBool() and TRANSLATE("hud.cvar.enabled") or TRANSLATE("hud.cvar.disabled")
+          elseif "Mod" == type then
+            value = tostring(conVar:GetFloat()) .. "x"
+          elseif "Select" == type then
+            value = TRANSLATE("hud.cvar." .. tostring(conVarName) .. "." .. tostring(conVar:GetInt()))
+          end
+
+          if value then
+            i = i + 1
+            draw.SimpleTextOutlined(tostring(TRANSLATE("cvar." .. conVarName)) .. ": " .. tostring(value), "NMW AU ConVar List", tW * 0.1, (i - 1) * tH * 1.05 + (categoryId - 1) * tH * 1.05, GAMEMODE:IsGameCommencing() and COLOR_GREEN or COLOR_WHITE, TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP, 2, Color(0, 0, 0, 160))
+          end
+        end
+      end
+    end
+
+    -- Round overlay.
+    self.roundOverlay = self:Add("Panel")
+    self.roundOverlay:SetZPos(30001)
+    self.roundOverlay:SetSize(ScrW(), ScrH() * 0.125)
+    self.roundOverlay:SetPos(0, ScrH() * 0.75)
+    local roContainer = self.roundOverlay:Add("Panel")
+    local margin = ScrW() * 0.25
+    roContainer:DockMargin(margin, 0, margin, 0)
+    roContainer:Dock(FILL)
+    -- Right
+    local roRight = roContainer:Add("Panel")
+    roRight:SetWide(0.5 * ScrW() * 0.25)
+    roRight:Dock(RIGHT)
+
+    if GAMEMODE.MapManifest then
+      local crewSize = 0.25 * roRight:GetWide()
+      -- Imposter Count Container
+      local impCount = roRight:Add("DOutlinedLabel")
+      impCount:Dock(BOTTOM)
+      impCount:SetTall(0.5 * ScrH() * 0.125)
+      impCount:SetColor(Color(255, 255, 255))
+      impCount:SetContentAlignment(8)
+      impCount:SetText("")
+      impCount:SetFont("NMW AU Start Subtext")
+
+      impCount.Think = function()
+        local imposterCount = math.min(GAMEMODE.ConVars.ImposterCount:GetInt(), GAMEMODE:GetImposterCount(GAMEMODE:GetFullyInitializedPlayerCount()))
+        impCount:SetText(tostring(TRANSLATE("prepare.imposterCount")(imposterCount)))
+      end
+
+      -- Count container.
+      local countContainer = roRight:Add("Panel")
+      countContainer:DockPadding(0, 0, crewSize * 0.5, 0)
+      countContainer:Dock(TOP)
+      countContainer:SetTall(0.5 * ScrH() * 0.125)
+      -- Crewmate
+      local crew = countContainer:Add("Panel")
+      crew:SetSize(crewSize, crewSize)
+      crew:DockMargin(crewSize * 0.25, 0, 0, 0)
+      crew:Dock(RIGHT)
+      -- A slightly unreadable chunk of garbage code
+      -- responsible for layering the crewmate sprite.
+      local layers = {}
+
+      for i = 1, 2 do
+        layers[i] = crew:Add("AmongUsCrewmate")
+        layers[i]:Dock(FILL)
+        layers[i]:SetColor(Color(255, 0, 0))
+        layers[i]:SetFlipX(true)
+      end
+
+      -- Label
+      local crewCount = countContainer:Add("DOutlinedLabel")
+      crewCount:SetFont("NMW AU Countdown")
+      crewCount:SetText("...")
+      crewCount:SetContentAlignment(6)
+      crewCount:Dock(FILL)
+
+      crewCount.Think = function()
+        local playerCount = GAMEMODE:GetFullyInitializedPlayerCount()
+        local needed = GAMEMODE.ConVars.MinPlayers:GetInt()
+        local maxPlayers = game.MaxPlayers()
+        crewCount:SetText(tostring(playerCount) .. "/" .. tostring(maxPlayers))
+        crewCount:SetColor(playerCount > needed and COLOR_WHITE or playerCount == needed and COLOR_YELLOW or COLOR_RED)
+      end
+    end
+
+    -- Middle
+    local roMiddle = roContainer:Add("Panel")
+    roMiddle:SetWide(ScrW() * 0.25)
+    roMiddle:Dock(RIGHT)
+    local prepText = roMiddle:Add("DOutlinedLabel")
+    prepText:SetTall(0.5 * ScrH() * 0.125)
+    prepText:Dock(TOP)
+    prepText:SetText("")
+    prepText:SetContentAlignment(5)
+    prepText:SetFont("NMW AU Countdown")
+    prepText:SetColor(Color(255, 255, 255))
+
+    prepText.Think = function()
+      if not GAMEMODE.MapManifest then
+        prepText:SetText(TRANSLATE("prepare.invalidMap"))
+      elseif GAMEMODE.ClientSideConVars.SpectatorMode:GetBool() then
+        prepText:SetText(TRANSLATE("prepare.spectator"))
+      elseif not GAMEMODE.ConVars.ForceAutoWarmup:GetBool() and CAMI.PlayerHasAccess(LocalPlayer(), GAMEMODE.PRIV_START_ROUND) then
+        prepText:SetText(TRANSLATE("prepare.admin"))
+      else
+        prepText:SetText(TRANSLATE("prepare.warmup"))
+      end
+    end
+
+    local prepSubtext = roMiddle:Add("DOutlinedLabel")
+    prepSubtext:SetTall(0.5 * ScrH() * 0.125)
+    prepSubtext:Dock(BOTTOM)
+    prepSubtext:SetText("")
+    prepSubtext:SetContentAlignment(5)
+    prepSubtext:SetFont("NMW AU Start Subtext")
+    prepSubtext:SetColor(Color(255, 255, 255))
+
+    prepSubtext.Think = function()
+      local needed = GAMEMODE.ConVars.MinPlayers:GetInt()
+
+      if not GAMEMODE.MapManifest then
+        prepSubtext:SetText(TRANSLATE("prepare.invalidMap.subText"))
+      elseif GAMEMODE:GetFullyInitializedPlayerCount() < needed then
+        prepSubtext:SetText(TRANSLATE("prepare.waitingForPlayers"))
+      elseif not GAMEMODE.ConVars.ForceAutoWarmup:GetBool() and CAMI.PlayerHasAccess(LocalPlayer(), GAMEMODE.PRIV_START_ROUND) then
+        prepSubtext:SetText(TRANSLATE("prepare.pressToStart")(string.upper(input.LookupBinding("jump") or "???")))
+      else
+        if not (GAMEMODE.ConVars.ForceAutoWarmup:GetBool() or GAMEMODE:IsOnAutoPilot()) then
+          prepSubtext:SetText(TRANSLATE("prepare.waitingForAdmin"))
+        else
+          local time = math_max(0, GetGlobalFloat("NMW AU AutoPilotTimer") - CurTime())
+
+          if time > 0 then
+            prepSubtext:SetText(TRANSLATE("prepare.commencing")(time))
+          else
+            prepSubtext:SetText("")
+          end
+        end
+      end
+    end
+
+    return
+  end
+
+  -- The task bar. A clustertruck of panels.
+  local taskBarPanel1 = self:Add("Panel")
+  taskBarPanel1:SetTall(ScrH() * 0.09)
+  taskBarPanel1:Dock(TOP)
+  local pad = ScrH() * 0.015
+  taskBarPanel1:DockPadding(pad, pad, pad, pad)
+  local taskBarPanel2 = taskBarPanel1:Add("Panel")
+  taskBarPanel2:SetWide(ScrW() * 0.35)
+  taskBarPanel2:Dock(LEFT)
+  pad = ScrH() * 0.003
+  taskBarPanel2:DockPadding(pad, pad, pad, pad)
+  local outerColor = Color(0, 0, 0)
+
+  taskBarPanel2.Paint = function(_, w, h)
+    draw.RoundedBox(6, 0, 0, w, h, outerColor)
+  end
+
+  local taskBarPanel3 = taskBarPanel2:Add("Panel")
+  taskBarPanel3:Dock(FILL)
+  pad = ScrH() * 0.008
+  taskBarPanel3:DockPadding(pad, pad, pad, pad)
+  local innerColor = Color(170, 188, 188)
+  local taskBarOuterColor = Color(51, 51, 51)
+  pad = ScrH() * 0.005
+
+  taskBarPanel3.Paint = function(_, w, h)
+    draw.RoundedBox(4, 0, 0, w, h, innerColor)
+    draw.RoundedBox(4, pad, pad, w - pad * 2, h - pad * 2, taskBarOuterColor)
+  end
+
+  local taskBarPanel4 = taskBarPanel3:Add("Panel")
+  taskBarPanel4:Dock(FILL)
+  self.taskBarLabel = taskBarPanel4:Add("DOutlinedLabel")
+  self.taskBarLabel:SetColor(Color(255, 255, 255))
+  self.taskBarLabel:SetZPos(1)
+  self.taskBarLabel:SetFont("NMW AU Taskbar")
+  self.taskBarLabel:SetText("  " .. TRANSLATE("tasks.totalCompleted"))
+  self.taskBarLabel:SetContentAlignment(4)
+
+  -- If there's a time limit, dock the timer to the right side.
+  if GAMEMODE:GetTimeLimit() > 0 then
+    local gameTimer = self.taskBarLabel:Add("DOutlinedLabel")
+    gameTimer:SetWide(ScrW() * 0.08)
+    gameTimer:Dock(RIGHT)
+    gameTimer:SetText("...")
+    gameTimer:SetContentAlignment(6)
+    gameTimer:SetFont("NMW AU Taskbar")
+    gameTimer:SetColor(Color(255, 255, 255))
+    local isRed = false
+
+    gameTimer.Think = function()
+      local time = GAMEMODE:GetTimeLimit()
+
+      if time <= 60 and not isRed then
+        isRed = true
+        gameTimer:SetColor(Color(255, 0, 0))
+      end
+
+      gameTimer:SetText(string.FormattedTime(time, "%02i:%02i") .. "  ")
+    end
+  end
+
+  self.taskbar = taskBarPanel4:Add("Panel")
+  local taskBarInnerColor = Color(68, 216, 68)
+
+  self.taskbar.Paint = function(_, w, h)
+    surface.SetDrawColor(taskBarInnerColor)
+
+    return surface.DrawRect(0, 0, w, h)
+  end
+
+  self.taskbar:NewAnimation(0, 0, 0, function()
+    local refW, refH = self.taskbar:GetParent():GetSize()
+    self.taskbar:SetSize(0, refH)
+    self.taskBarLabel:SetSize(refW, refH)
+  end)
+
+  -- The task list.
+  self.taskBoxContainer = self:Add("Panel")
+  local taskLabel
+  local margin = ScrH() * 0.015
+  self.taskBoxContainer:DockMargin(margin, 0, 0, 0)
+  self.taskBoxContainer:SetWide(ScrW() * 0.35)
+  self.taskBoxContainer:Dock(LEFT)
+  -- Label container.
+  local taskBoxTitle = self.taskBoxContainer:Add("Panel")
+  taskBoxTitle:Dock(TOP)
+  taskBoxTitle:SetTall(ScrH() * 0.05)
+  taskLabel = taskBoxTitle:Add("DOutlinedLabel")
+  taskLabel:Dock(LEFT)
+  local key = string.upper(input.LookupBinding("gmod_undo") or "?")
+  local text = "(" .. tostring(key) .. ") " .. tostring(TRANSLATE(impostor and "hud.fakeTasks" or "hud.tasks"))
+  taskLabel:SetText("  " .. tostring(text) .. "  ")
+  taskLabel:SetFont("NMW AU Taskbar")
+  taskLabel:SetContentAlignment(5)
+  local taskLabel_OldPaint = taskLabel.Paint
+
+  taskLabel.Paint = function(_, w, h)
+    surface.SetDrawColor(255, 255, 255, 16)
+    surface.DrawRect(0, 0, w, h)
+    taskLabel_OldPaint(_, w, h)
+  end
+
+  taskLabel:SizeToContentsX()
+  self.tasks = {}
+  self.taskBox = self.taskBoxContainer:Add("Panel")
+  self.taskBox:Dock(FILL)
+  local padding = ScrW() * 0.005
+  self.taskBox:DockPadding(padding, 0, 0, 0)
+
+  self.taskBox.PerformLayout = function()
+    local max
+
+    for _, child in ipairs(self.taskBox:GetChildren()) do
+      local sizeX = child:GetContentSize()
+
+      if not max or sizeX > max then
+        max = sizeX
+      end
+    end
+
+    local _, childHeight = self.taskBox:ChildrenSize()
+    self.taskBox.__maxWidth = padding * 2 + (max or 0)
+    self.taskBox.__maxHeight = childHeight
+  end
+
+  self.taskBox:InvalidateLayout()
+
+  self.taskBox.Paint = function(_, w, h)
+    surface.SetDrawColor(255, 255, 255, 16)
+    surface.DrawRect(0, 0, self.taskBox.__maxWidth or 0, self.taskBox.__maxHeight)
+  end
+
+  -- add role description to taskbox
+  if localPlayerRole.desc then
+    local roleDesc = self:AddTaskEntry()
+    roleDesc:SetText(localPlayerRole.desc)
+    roleDesc:SetColor(localPlayerRole.color)
+  end
+
+  if localPlayerTable then
+    -- Use button. Content-aware.
+    self.use = self.buttons:Add("Panel")
+    self.use:SetWide(self.buttons:GetTall())
+    self.use:DockMargin(0, 0, ScreenScale(5), 0)
+    self.use:Dock(RIGHT)
+
+    function self.use:Think()
+      if IsValid(GAMEMODE.UseHighlight) then
+        self:SetAlpha(255)
+      else
+        self:SetAlpha(32)
+      end
+    end
+
+    self.use.Paint = function(_, w, h)
+      local ent = GAMEMODE.UseHighlight
+      local mat = self.UseButtonOverride or IsValid(ent) and (ent:GetClass() == "prop_vent" or ent:GetClass() == "func_vent") and MAT_BUTTONS.vent
+
+      if not mat then
+        mat = MAT_BUTTONS.use
+      end
+
+      -- Like, jesus christ man.
+      surface.SetDrawColor(COLOR_WHITE)
+      surface.SetMaterial(mat)
+      render.PushFilterMag(TEXFILTER.ANISOTROPIC)
+      render.PushFilterMin(TEXFILTER.ANISOTROPIC)
+      surface.DrawTexturedRect(0, 0, w, h)
+      render.PopFilterMag()
+      render.PopFilterMin()
+    end
+
+    -- Report button. Content-aware.
+    self.report = self.buttonsTwo:Add("Panel")
+    self.report:SetWide(self.buttonsTwo:GetTall())
+    self.report:DockMargin(0, 0, ScreenScale(5), 0)
+    self.report:Dock(RIGHT)
+
+    function self.report.Think()
+      if IsValid(GAMEMODE.ReportHighlight) then
+        self.report:SetAlpha(255)
+      else
+        self.report:SetAlpha(32)
+      end
+    end
+
+    local mat = MAT_BUTTONS.report
+
+    self.report.Paint = function(_, w, h)
+      -- Here we are again.
+      surface.SetDrawColor(COLOR_WHITE)
+      surface.SetMaterial(mat)
+      render.PushFilterMag(TEXFILTER.ANISOTROPIC)
+      render.PushFilterMin(TEXFILTER.ANISOTROPIC)
+      surface.DrawTexturedRect(0, 0, w, h)
+      render.PopFilterMag()
+      render.PopFilterMin()
+    end
+
+    -- Kill button for imposerts. Content-aware.
+    if localPlayerRole and localPlayerRole.CanKill then
+      self.kill = self.buttons:Add("Panel")
+      self.kill:SetWide(self.buttons:GetTall())
+      self.kill:DockMargin(0, 0, ScreenScale(5), 0)
+      self.kill:Dock(RIGHT)
+
+      self.kill.Paint = function(_, w, h)
+        -- Honestly I wish I had a wrapper for this kind of monstrosities.
+        surface.SetMaterial(MAT_BUTTONS.kill)
+        render.PushFilterMag(TEXFILTER.ANISOTROPIC)
+        render.PushFilterMin(TEXFILTER.ANISOTROPIC)
+        local alpha
+
+        if GAMEMODE.GameData.KillCooldown >= CurTime() then
+          alpha = 32
+        elseif IsValid(GAMEMODE.KillHighlight) and not GAMEMODE.GameData.Imposters[GAMEMODE.KillHighlight] then
+          alpha = 255
+        else
+          alpha = 32
+        end
+
+        surface.SetDrawColor(COLOR_WHITE.r, COLOR_WHITE.g, COLOR_WHITE.b, alpha)
+        surface.DrawTexturedRect(0, 0, w, h)
+        render.PopFilterMag()
+        render.PopFilterMin()
+
+        if GAMEMODE.GameData.KillCooldownOverride or (GAMEMODE.GameData.KillCooldown and GAMEMODE.GameData.KillCooldown >= CurTime()) then
+          local time = GAMEMODE.GameData.KillCooldownOverride or math.max(0, GAMEMODE.GameData.KillCooldown - CurTime())
+
+          if time > 0 then
+            draw.SimpleTextOutlined(string.format("%d", math.floor(time)), "NMW AU Cooldown", w * 0.5, h * 0.5, COLOR_WHITE, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 4, COLOR_BLACK)
+          end
+        end
+      end
+    end
+
+    -- The player icon!
+    -- for some reason this thing wants to be DPanel
+    -- why??
+    self.playerIcon = self.buttons:Add("DPanel")
+    self.playerIcon:SetWide(self.buttons:GetTall())
+    self.playerIcon:Dock(LEFT)
+    local size = self.playerIcon:GetWide()
+    local circle = GAMEMODE.Render.CreateCircle(size / 2, size / 2, size / 2, 90)
+
+    self.playerIcon.Paint = function()
+      surface.SetAlphaMultiplier(0.8)
+      surface.SetDrawColor(localPlayerTable.color)
+      draw.NoTexture()
+      surface.DrawPoly(circle)
+      surface.SetAlphaMultiplier(1)
+    end
+
+    local model = self.playerIcon:Add("DModelPanel")
+    model:Dock(FILL)
+    model:SetModel(LocalPlayer():GetModel())
+    model:SetFOV(36)
+    model:SetCamPos(model:GetCamPos() - Vector(0, 0, 4))
+    local modelEntity = model:GetEntity()
+    local playerColor = localPlayerTable.color:ToVector()
+    modelEntity.GetPlayerColor = function() return playerColor end
+    modelEntity:SetAngles(Angle(0, 90, 0))
+    modelEntity:SetPos(modelEntity:GetPos() - Vector(0, 0, 4))
+    model.LayoutEntity = function() end
+    local textColor = GAMEMODE.GameData.Imposters[localPlayerTable] and Color(255, 32, 32) or Color(255, 255, 255)
+    local model_oldPaint = model.Paint
+
+    model.Paint = function(_, w, h)
+      -- le old huge chunk of stencil code. shall we?
+      render.ClearStencil()
+      render.SetStencilEnable(true)
+      render.SetStencilTestMask(0xFF)
+      render.SetStencilWriteMask(0xFF)
+      render.SetStencilReferenceValue(0x01)
+      render.SetStencilCompareFunction(STENCIL_NEVER)
+      render.SetStencilFailOperation(STENCIL_REPLACE)
+      render.SetStencilZFailOperation(STENCIL_REPLACE)
+      surface.DrawPoly(circle)
+      render.SetStencilCompareFunction(STENCIL_LESSEQUAL)
+      render.SetStencilFailOperation(STENCIL_KEEP)
+      render.SetStencilZFailOperation(STENCIL_KEEP)
+      model:SetAlpha(255 * (GAMEMODE.GameData.DeadPlayers[localPlayerTable] and 0.65 or 1))
+      model_oldPaint(_, w, h)
+      render.SetStencilEnable(false)
+      surface.DisableClipping(true)
+      draw.SimpleTextOutlined(localPlayerTable.nickname or "", "NMW AU Taskbar", w / 2, -size * 0.1, textColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, 160))
+      surface.DisableClipping(false)
+    end
+  end
+end
+
+function VGUI_SPLASH:DisplayPlayers(reason)
   local localPlayerTable = GAMEMODE.GameData.Lookup_PlayerByEntity[LocalPlayer()]
   local localPlayerRole = LocalPlayer():GetRole()
   local localPlayerTeam = LocalPlayer():GetTeam()
@@ -26,7 +513,7 @@ function splash:DisplayPlayers(reason)
     -- Are we winning, son?
     local victory = reason and reason == localPlayerTeam.id
     -- Are we coloring, son?
-    local theme_color = localPlayerRole.color
+    local theme_color = reason and roles.GetByID(reason).color or localPlayerRole.color
 
     -- Play a contextual sound depending on why we're showing the screen.
     if reason then
@@ -222,7 +709,19 @@ function splash:DisplayPlayers(reason)
   end)
 end
 
-table.Merge(VGUI_SPLASH, splash)
+function GAMEMODE:HUD_Reset()
+  if IsValid(self.__splash) then
+    self.__splash:Remove()
+  end
+
+  if IsValid(self.Hud) then
+    self.Hud:Remove()
+  end
+
+  self.Hud = vgui.CreateFromTable(VGUI_HUD)
+  self.Hud:SetPaintedManually(true)
+  if self.MapManifest then return self:HUD_InitializeMap() end
+end
 
 function GAMEMODE:HUD_DisplayGameOver(reason)
   if IsValid(self.Hud) then

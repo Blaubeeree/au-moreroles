@@ -4,6 +4,7 @@
 })
 
 ROLE.id = ROLE_IMPOSTER
+ROLE.desc = "Sabotage and kill everyone."
 ROLE.color = Color(255, 0, 0)
 ROLE.defaultTeam = TEAM_IMPOSTER
 ROLE.CanKill = true
