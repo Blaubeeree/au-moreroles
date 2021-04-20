@@ -84,7 +84,17 @@ function roleselection.GetSelectableRoles()
 end
 
 function roleselection.SetRole(ply, role)
+  local oldRole = ply:GetRole()
   SetRole(ply, role)
+
+  if GAMEMODE.GameData.Tasks then
+    if oldRole.HasTasks and not role.HasTasks then
+      GAMEMODE.GameData.TotalTasks = GAMEMODE.GameData.TotalTasks - table.Count(GAMEMODE.GameData.Tasks[ply:GetAUPlayerTable()])
+    elseif not oldRole.HasTasks and role.HasTasks then
+      GAMEMODE.GameData.TotalTasks = GAMEMODE.GameData.TotalTasks + table.Count(GAMEMODE.GameData.Tasks[ply:GetAUPlayerTable()])
+    end
+  end
+
   BroadcastRoles()
 end
 

@@ -214,3 +214,61 @@ function GAMEMODE:Net_BroadcastGameOver(reason)
   net.Broadcast()
   oldBroadcastGameOver(self, reason)
 end
+
+local oldTaskAssignToPlayers = GAMEMODE.Task_AssignToPlayers
+
+function GAMEMODE:Task_AssignToPlayers()
+  oldTaskAssignToPlayers(GAMEMODE)
+  local totalTasks = 0
+
+  for ply, tasks in pairs(GAMEMODE.GameData.Tasks) do
+    if ply.entity:GetRole().HasTasks then
+      totalTasks = totalTasks + table.Count(tasks)
+    end
+  end
+
+  GAMEMODE.GameData.TotalTasks = totalTasks
+end
+
+hook.Remove("PlayerDisconnected", "NMW AU CheckWin")
+
+hook.Add("PlayerDisconnected", "NMW AU CheckWin", function(ply)
+  local initializedPlayers = GAMEMODE:GetFullyInitializedPlayers()
+
+  if (GAMEMODE:IsGameInProgress() or GAMEMODE:IsGameCommencing()) and #initializedPlayers <= 1 then
+    GAMEMODE.Logger.Info("Everyone left. Stopping the game.")
+    GAMEMODE:Game_Restart()
+
+    return
+  end
+
+  if GAMEMODE:IsGameInProgress() then
+    local playerTable = GAMEMODE.GameData.Lookup_PlayerByEntity[ply]
+
+    if playerTable then
+      GAMEMODE:Player_SetDead(playerTable)
+      GAMEMODE:Player_CloseVGUI(playerTable)
+
+      -- If the player had tasks, "complete" his tasks and broadcast the new count.
+      if GAMEMODE.GameData.Tasks and GAMEMODE.GameData.Tasks[playerTable] and ply:GetRole().HasTasks then
+        local count = table.Count(GAMEMODE.GameData.Tasks[playerTable])
+
+        if count > 0 then
+          GAMEMODE.GameData.CompletedTasks = GAMEMODE.GameData.CompletedTasks + table.Count(GAMEMODE.GameData.Tasks[playerTable])
+          table.Empty(GAMEMODE.GameData.Tasks[playerTable])
+          GAMEMODE:Net_BroadcastTaskCount(GAMEMODE.GameData.CompletedTasks, GAMEMODE.GameData.TotalTasks)
+        end
+      end
+
+      if not GAMEMODE:IsMeetingInProgress() then
+        GAMEMODE:Game_CheckWin()
+      end
+    end
+  else
+    if timer.Exists("tryStartGame") then
+      GAMEMODE.Logger.Warn("Couldn't start the round! Someone left after the countdown")
+      timer.Remove("tryStartGame")
+      GAMEMODE:Game_CleanUp(true)
+    end
+  end
+end)
