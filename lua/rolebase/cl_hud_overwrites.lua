@@ -721,7 +721,14 @@ function GAMEMODE:HUD_Reset()
 
   self.Hud = vgui.CreateFromTable(VGUI_HUD)
   self.Hud:SetPaintedManually(true)
-  if self.MapManifest then return self:HUD_InitializeMap() end
+
+  if self.MapManifest then
+    self:HUD_InitializeMap()
+  end
+
+  if LocalPlayer():GetRole().CanSabotage then
+    self:HUD_InitializeImposterMap()
+  end
 end
 
 function GAMEMODE:HUD_DisplayGameOver(reason)
