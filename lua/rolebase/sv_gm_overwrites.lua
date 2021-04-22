@@ -1,4 +1,4 @@
-﻿function GAMEMODE:Game_Start()
+function GAMEMODE:Game_Start()
   -- Bail if the manifest is missing or malformed.
   if not (GAMEMODE.MapManifest and GAMEMODE.MapManifest.Tasks) then return end
   -- Bail if the game is already in progress.
@@ -192,6 +192,99 @@ end
 function GAMEMODE:Player_UnMark(ply)
   roleselection.ForceRole(ply, nil)
 end
+
+local function packVentLinks(vent)
+  local links = {}
+
+  if vent.Links and #vent.Links > 0 then
+    for _, link in ipairs(vent.Links) do
+      table.insert(links, link:GetName() or "N/A")
+    end
+  end
+
+  return links
+end
+
+function GAMEMODE:Player_VentTo(playerTable, targetVentId)
+  if "Player" == type(playerTable) then
+    playerTable = playerTable:GetAUPlayerTable()
+  end
+
+  if not playerTable then return end
+  local role = playerTable.entity:GetRole()
+  local vent = self.GameData.Vented[playerTable]
+
+  if vent and vent.Links and role.CanVent and IsValid(vent.Links[targetVentId]) and (self.GameData.VentCooldown[playerTable] or 0) <= CurTime() then
+    local targetVent = vent.Links[targetVentId]
+    self.GameData.Vented[playerTable] = targetVent
+
+    if IsValid(playerTable.entity) then
+      self:Net_NotifyVent(playerTable, self.VentNotifyReason.Move, packVentLinks(targetVent))
+    end
+
+    self.GameData.VentCooldown[playerTable] = CurTime() + 0.25
+
+    if IsValid(playerTable.entity) then
+      playerTable.entity:SetPos(targetVent:GetPos())
+
+      if targetVent.ViewAngle then
+        playerTable.entity:SetEyeAngles(targetVent.ViewAngle)
+      end
+    end
+  end
+end
+
+function GAMEMODE:Player_Vent(playerTable, vent)
+  if "Player" == type(playerTable) then
+    playerTable = playerTable:GetAUPlayerTable()
+  end
+
+  if not playerTable then return end
+  local role = playerTable.entity:GetRole()
+
+  if not self.GameData.DeadPlayers[playerTable] and role.CanVent and not self.GameData.Vented[playerTable] then
+    if IsValid(playerTable.entity) then
+      self:Net_NotifyVent(playerTable, self.VentNotifyReason.Vent, packVentLinks(vent))
+    end
+
+    self.GameData.Vented[playerTable] = vent
+    self.GameData.VentCooldown[playerTable] = CurTime() + 0.75
+    local handle = "vent" .. playerTable.nickname
+
+    if IsValid(playerTable.entity) then
+      playerTable.entity:SetPos(vent:GetPos())
+
+      if vent.ViewAngle then
+        playerTable.entity:SetEyeAngles(vent.ViewAngle)
+      end
+
+      self:Net_BroadcastVent(playerTable.entity, vent:GetPos(), playerTable.entity:EyeAngles())
+      self:Player_Hide(playerTable.entity)
+      self:Player_PauseKillCooldown(playerTable)
+      vent:TriggerOutput("OnVentIn", playerTable.entity)
+    end
+
+    timer.Create(handle, 0.125, 1, function()
+      if IsValid(playerTable.entity) then
+        playerTable.entity:SetPos(vent:GetPos())
+
+        if vent.ViewAngle then
+          playerTable.entity:SetEyeAngles(vent.ViewAngle)
+        end
+      end
+    end)
+  end
+end
+
+hook.Add("KeyPress", "NMW AU UnVent", function(ply, key)
+  if key == IN_USE then
+    local playerTable = GAMEMODE.GameData.Lookup_PlayerByEntity[ply]
+
+    if not GAMEMODE.GameData.Imposters[playerTable] and GAMEMODE.GameData.Vented[playerTable] and (GAMEMODE.GameData.VentCooldown[playerTable] or 0) <= CurTime() then
+      GAMEMODE:Player_UnVent(playerTable)
+    end
+  end
+end)
 
 util.AddNetworkString("AU RevealRoles")
 local oldBroadcastGameOver = GAMEMODE.Net_BroadcastGameOver
