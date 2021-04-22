@@ -1,4 +1,4 @@
-function GAMEMODE:Game_Start()
+﻿function GAMEMODE:Game_Start()
   -- Bail if the manifest is missing or malformed.
   if not (GAMEMODE.MapManifest and GAMEMODE.MapManifest.Tasks) then return end
   -- Bail if the game is already in progress.
@@ -365,3 +365,22 @@ hook.Add("PlayerDisconnected", "NMW AU CheckWin", function(ply)
     end
   end
 end)
+
+function GAMEMODE:Sabotage_Start(playerTable, id)
+  if "Player" == type(playerTable) then
+    playerTable = playerTable:GetAUPlayerTable()
+  end
+
+  if not playerTable then return end
+  local role = playerTable.entity:GetRole()
+
+  if not self:IsMeetingInProgress() and role.CanSabotage and not self.GameData.Vented[playerTable] and IsValid(playerTable.entity) then
+    local usable = GAMEMODE:TracePlayer(playerTable.entity, self.TracePlayerFilter.Usable)
+    local instance = self.GameData.Sabotages[id]
+    if self:ShouldHighlightEntity(usable) then return end
+
+    if instance and instance:CanStart() then
+      instance:Start()
+    end
+  end
+end
