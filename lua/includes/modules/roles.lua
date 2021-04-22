@@ -10,7 +10,7 @@ local TeamsByID = TeamsByID or {}
 
 local defaultSettings = {
   color = Color(0, 0, 0),
-  defaultTeam = 1,
+  defaultTeam = TEAM_CREWMATE,
   CanKill = false,
   CanSabotage = false,
   CanVent = false,
