@@ -188,7 +188,7 @@ function VGUI_HUD:SetupButtons(state, impostor)
         if not (GAMEMODE.ConVars.ForceAutoWarmup:GetBool() or GAMEMODE:IsOnAutoPilot()) then
           prepSubtext:SetText(TRANSLATE("prepare.waitingForAdmin"))
         else
-          local time = math_max(0, GetGlobalFloat("NMW AU AutoPilotTimer") - CurTime())
+          local time = math.max(0, GetGlobalFloat("NMW AU AutoPilotTimer") - CurTime())
 
           if time > 0 then
             prepSubtext:SetText(TRANSLATE("prepare.commencing")(time))
@@ -628,7 +628,6 @@ function VGUI_SPLASH:DisplayPlayers(reason)
     -- In case it's a start splash screen, display our team
     -- In case it's a game over screen, display the winning team
     local players = {}
-    local _list_0 = GAMEMODE.GameData.PlayerTables
 
     for _, playerTable in pairs(GAMEMODE.GameData.PlayerTables) do
       if playerTable.entity ~= LocalPlayer() then
@@ -768,7 +767,7 @@ hook.Add("PreDrawHalos", "NMW AU Highlight", function()
 
   -- Highlight sabotage buttons.
   for btn in pairs(GAMEMODE.GameData.SabotageButtons) do
-    halo.Add({btn}, math_floor((SysTime() * 4) % 2) ~= 0 and color_sabotage or color_sabotageb, 1, 1, 10, true, true)
+    halo.Add({btn}, math.floor((SysTime() * 4) % 2) ~= 0 and color_sabotage or color_sabotageb, 1, 1, 10, true, true)
   end
 
   if IsValid(GAMEMODE.KillHighlight) then
