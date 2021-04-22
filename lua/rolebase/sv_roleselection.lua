@@ -115,21 +115,20 @@ function roleselection.SelectRoles(plyTables)
   local selectableRoles = GetSelectableRoles(true)
 
   -- select forced roles
-  for ply, role in pairs(forcedRoles) do
+  for ply, role in RandomPairs(forcedRoles) do
     local plyTable = ply:GetAUPlayerTable()
     local plyKey = table.KeyFromValue(plyTables, plyTable)
+    local plyCount = #player.GetAll()
     local base = role.baserole
 
     -- enable baserole if role disabled because of randomness
     if base and not selectableRoles[base.id] and base ~= CREWMATE then
-      local plyCount = #player.GetAll()
       if not base.cvars.enabled:GetBool() and base.cvars.minPlayers:GetInt() > plyCount then continue end
       selectableRoles[base.id] = math.min(base.cvars.max:GetInt(), math.floor(base.cvars.pct:GetFloat() * plyCount))
     end
 
     -- enable role if role disabled because of randomness
     if not selectableRoles[role.id] and role ~= CREWMATE then
-      local plyCount = #player.GetAll()
       if not role.cvars.enabled:GetBool() and role.cvars.minPlayers:GetInt() > plyCount then continue end
       selectableRoles[role.id] = math.min(role.cvars.max:GetInt(), math.floor(role.cvars.pct:GetFloat() * plyCount))
     end
