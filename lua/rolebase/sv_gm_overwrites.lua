@@ -152,11 +152,10 @@
 
         -- Unfreeze everyone and broadcast buttons.
         for _, ply in ipairs(GAMEMODE.GameData.PlayerTables) do
-          if IsValid(ply.entity) then
-            ply.entity:Freeze(fal)
-          end
+          if not IsValid(ply.entity) then continue end
+          ply.entity:Freeze(fal)
 
-          if GAMEMODE.GameData.Imposters[ply] then
+          if ply.entity:GetRole().CanKill then
             GAMEMODE:Player_RefreshKillCooldown(ply, 10)
           end
         end
@@ -179,6 +178,20 @@
       end)
     end)
   end)
+end
+
+local oldStartRound = GAMEMODE.Game_StartRound
+
+function GAMEMODE:Game_StartRound(first)
+  oldStartRound(self, first)
+
+  if not first then
+    for ply in pairs(self.GameData.PlayerTables) do
+      if ply.entity:GetRole().CanKill then
+        self:Player_RefreshKillCooldown(ply, first and 10 or nil)
+      end
+    end
+  end
 end
 
 function GAMEMODE:Player_MarkCrew(ply)
@@ -276,6 +289,71 @@ function GAMEMODE:Player_Vent(playerTable, vent)
   end
 end
 
+function GAMEMODE:Player_Kill(victimTable, attackerTable)
+  if "Player" == type(victimTable) then
+    victimTable = victimTable:GetAUPlayerTable()
+  elseif not victimTable then
+    return
+  end
+
+  if "Player" == type(attackerTable) then
+    attackerTable = attackerTable:GetAUPlayerTable()
+  elseif not attackerTable then
+    return
+  end
+
+  -- Bail if one of the players is invalid. The game mode will handle the killing internally.
+  if not (IsValid(victimTable.entity) and IsValid(victimTable.entity)) then return end
+  -- Bail if not in the PVS.
+  if not (victimTable.entity:TestPVS(attackerTable.entity) and attackerTable.entity:TestPVS(victimTable.entity)) then return end
+  -- Bail if one of the players is dead.
+  if self.GameData.DeadPlayers[attackerTable] or self.GameData.DeadPlayers[victimTable] then return end
+  -- Bail if the attacker isn't allowed to kill.
+  if not attackerTable.entity:GetRole().CanKill then return end
+  -- Bail if victim and attacker are in the same team and the attacker knows that.
+  if victimTable.entity:GetTeam() == attackerTable.entity:GetTeam() and attackerTable.entity:GetRole().ShowTeammates then return end
+  -- Bail if player has a cooldown.
+  if (self.GameData.KillCooldowns[attackerTable] or 0) > CurTime() then return end
+  -- Bail if the kill cooldown is paused
+  if self.GameData.KillCooldownRemainders[attackerTable] then return end
+  -- Bail if the attacker is too far.
+  -- A fairly sophisticated check.
+  local radius = (self.BaseUseRadius * self.ConVarSnapshots.KillDistanceMod:GetFloat())
+  if radius * radius < (victimTable.entity:NearestPoint(attackerTable.entity:GetPos())):DistToSqr(attackerTable.entity:NearestPoint(victimTable.entity:GetPos())) then return end
+  local corpse = ents.Create("prop_ragdoll")
+  corpse:SetPos(victimTable.entity:GetPos())
+  corpse:SetAngles(victimTable.entity:GetAngles())
+  corpse:SetModel(GAMEMODE:GetDefaultCorpseModel())
+  corpse:SetCollisionGroup(COLLISION_GROUP_DEBRIS_TRIGGER)
+  corpse:SetUseType(SIMPLE_USE)
+  -- Garbage-tier workaround because NW vars are not accessible in OnEntityCreated.
+  corpse:SetDTInt(15, victimTable.id)
+  corpse:Spawn()
+  corpse:Activate()
+  corpse:PhysWake()
+
+  if IsValid(attackerTable.entity) then
+    local phys = corpse:GetPhysicsObject()
+
+    if IsValid(phys) then
+      phys:SetVelocity((victimTable.entity:GetPos() - attackerTable.entity:GetPos()):GetNormalized() * 250)
+    end
+
+    attackerTable.entity:SetPos(victimTable.entity:GetPos())
+  end
+
+  self:Player_SetDead(victimTable)
+  self:Player_RefreshKillCooldown(attackerTable)
+  self:Net_KillNotify(attackerTable)
+  self:Player_CloseVGUI(victimTable)
+
+  -- Check if the imposters have won.
+  -- Don't play the kill animation if they have.
+  if not self:Game_CheckWin() then
+    self:Net_SendNotifyKilled(victimTable, attackerTable)
+  end
+end
+
 hook.Add("KeyPress", "NMW AU UnVent", function(ply, key)
   if key == IN_USE then
     local playerTable = GAMEMODE.GameData.Lookup_PlayerByEntity[ply]
@@ -308,10 +386,25 @@ function GAMEMODE:Net_BroadcastGameOver(reason)
   oldBroadcastGameOver(self, reason)
 end
 
+util.AddNetworkString("AU KillRequest")
+
+net.Receive("AU KillRequest", function(len, ply)
+  local playerTable = GAMEMODE.GameData.Lookup_PlayerByEntity[ply]
+
+  if playerTable and GAMEMODE.IsGameInProgress() and ply:GetRole().CanKill and not ply:IsFrozen() then
+    local target = net.ReadEntity()
+    target = GAMEMODE.GameData.Lookup_PlayerByEntity[target]
+
+    if target then
+      GAMEMODE:Player_Kill(target, playerTable)
+    end
+  end
+end)
+
 local oldTaskAssignToPlayers = GAMEMODE.Task_AssignToPlayers
 
 function GAMEMODE:Task_AssignToPlayers()
-  oldTaskAssignToPlayers(GAMEMODE)
+  oldTaskAssignToPlayers(self)
   local totalTasks = 0
 
   for ply, tasks in pairs(GAMEMODE.GameData.Tasks) do

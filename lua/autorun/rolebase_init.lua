@@ -6,6 +6,7 @@
   -- all scripts should be located in lua/rolebase
   if SERVER then
     -- add all clientside and shared scripts
+    AddCSLuaFile("rolebase/cl_gm_overwrites.lua")
     AddCSLuaFile("rolebase/cl_hud_overwrites.lua")
     AddCSLuaFile("rolebase/cl_roleselection.lua")
     AddCSLuaFile("rolebase/sh_gm_overwrites.lua")
@@ -19,6 +20,7 @@
     -- resource.AddWorkshop("cooleWorkshopID")
   else
     -- include all clientside scripts
+    include("rolebase/cl_gm_overwrites.lua")
     include("rolebase/cl_hud_overwrites.lua")
     include("rolebase/cl_roleselection.lua")
   end
