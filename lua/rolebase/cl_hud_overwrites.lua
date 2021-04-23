@@ -1,4 +1,4 @@
-﻿GM = GAMEMODE
+GM = GAMEMODE
 local VGUI_HUD = include("amongus/gamemode/vgui/vgui_hud.lua")
 local VGUI_SPLASH = include("amongus/gamemode/vgui/vgui_splash.lua")
 GM = nil
@@ -767,11 +767,11 @@ hook.Add("PreDrawHalos", "NMW AU Highlight", function()
 
   -- Highlight sabotage buttons.
   for btn in pairs(GAMEMODE.GameData.SabotageButtons) do
-    halo.Add({btn}, math.floor((SysTime() * 4) % 2) ~= 0 and color_sabotage or color_sabotageb, 1, 1, 10, true, true)
+    halo.Add({btn}, math.floor((SysTime() * 4) % 2) ~= 0 and Color(32, 255, 32) or Color(255, 32, 32), 1, 1, 10, true, true)
   end
 
   if IsValid(GAMEMODE.KillHighlight) then
-    halo.Add({GAMEMODE.KillHighlight}, color_kill, 4, 4, 8, true, true)
+    halo.Add({GAMEMODE.KillHighlight}, Color(255, 0, 0), 4, 4, 8, true, true)
   end
 
   local highlighted = {}
