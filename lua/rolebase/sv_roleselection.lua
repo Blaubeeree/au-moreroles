@@ -116,6 +116,7 @@ function roleselection.SelectRoles(plyTables)
 
   -- select forced roles
   for ply, role in RandomPairs(forcedRoles) do
+    if type(ply) ~= "Player" then continue end
     local plyTable = ply:GetAUPlayerTable()
     local plyKey = table.KeyFromValue(plyTables, plyTable)
     local plyCount = #player.GetAll()
