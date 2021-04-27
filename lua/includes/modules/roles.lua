@@ -1,4 +1,4 @@
-﻿module("roles", package.seeall)
+module("roles", package.seeall)
 _G.ROLE_IMPOSTER = 1
 _G.TEAM_IMPOSTER = 1
 _G.ROLE_CREWMATE = 2
@@ -94,7 +94,9 @@ end
 function SetBaseRole(roleTable, baserole)
   baserole = RolesByID[baserole] or baserole
 
-  if roleTable.baserole then
+  if baserole == CREWMATE then
+    GAMEMODE.Logger.Error("BaseRole of" .. roleTable.name .. " can't be set to crewmate!")
+  elseif roleTable.baserole then
     GAMEMODE.Logger.Error("BaseRole of " .. roleTable.name .. " already set (" .. roleTable.baserole.name .. ")!")
   elseif roleTable.id == baserole.id then
     GAMEMODE.Logger.Error("BaseRole " .. roleTable.name .. " can't be a baserole of itself!")
