@@ -1,4 +1,4 @@
-module("roles", package.seeall)
+﻿module("roles", package.seeall)
 _G.ROLE_IMPOSTER = 1
 _G.TEAM_IMPOSTER = 1
 _G.ROLE_CREWMATE = 2
@@ -84,10 +84,10 @@ function Register(name, data)
 end
 
 function CreateTeam(name, data)
-  name = string.lower(name)
+  data.name = string.lower(name)
   data.id = data.id or GenerateTeamID()
   _G["TEAM_" .. string.upper(name)] = data.id
-  TeamsByName[name] = data
+  TeamsByName[data.name] = data
   TeamsByID[data.id] = data
 end
 
