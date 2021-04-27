@@ -194,6 +194,48 @@ function GAMEMODE:Game_StartRound(first)
   end
 end
 
+function GAMEMODE:Game_CheckWin(reason)
+  local numRoles = {}
+  local rolesCanKill = {}
+  local totalPlayers = 0
+
+  -- fill variables
+  for _, ply in ipairs(self.GameData.PlayerTables) do
+    if IsValid(ply.entity) and not self.GameData.DeadPlayers[ply] then
+      local team = ply.entity:GetTeam()
+
+      if ply.entity:GetRole().ShowTeammates then
+        numRoles[team] = numRoles[team] and numRoles[team] + 1 or 1
+      end
+
+      if ply.entity:GetRole().CanKill then
+        table.insert(rolesCanKill, team)
+      end
+
+      totalPlayers = totalPlayers + 1
+    end
+  end
+
+  -- check if a team has won
+  for team, num in pairs(numRoles) do
+    -- team wins if it has half or more of the living players
+    if num >= totalPlayers / 2 then
+      -- if team has exactly half of the players they only won if no other player can kill them
+      if num == totalPlayers / 2 then
+        for _, team2 in ipairs(rolesCanKill) do
+          if team2 ~= team then continue end
+        end
+      end
+
+      local teamName = string.upper(team.name[1]) .. string.sub(team.name, 2)
+      self.Logger.Info("Game over. " .. teamName .. "s have won!")
+      self:Game_GameOver(team.id)
+
+      return true
+    end
+  end
+end
+
 function GAMEMODE:Player_MarkCrew(ply)
   roleselection.ForceRole(ply, CREWMATE)
 end
