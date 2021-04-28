@@ -1,4 +1,4 @@
-hook.Remove("PreDrawHalos", "NMW AU Highlight")
+﻿hook.Remove("PreDrawHalos", "NMW AU Highlight")
 
 hook.Add("PreDrawHalos", "NMW AU Highlight", function()
   if not (GAMEMODE:IsGameInProgress()) then return end
@@ -57,3 +57,50 @@ hook.Add("PreDrawHalos", "NMW AU Highlight", function()
   end
 end)
 
+hook.Remove("PostPlayerDraw", "NMW AU Nicknames")
+
+hook.Add("PostPlayerDraw", "NMW AU Nicknames", function(ply)
+  -- Don't draw our nickname.
+  -- Don't draw ghost nicknames.
+  -- Don't draw invalid players' nicknames... what?
+  if not ply:IsValid() or ply:IsDormant() or ply == LocalPlayer() then return end
+  -- No drawing if something doesn't want us to draw.
+  if true == hook.Call("GMAU PreDrawNicknames") then return end
+  -- Position the text directly above the player's head.
+  local pos = ply:OBBMaxs()
+  pos = pos + (ply:GetPos() + Vector(-pos.x, -pos.y, 2))
+  -- Calculate the text angle.
+  local angle = (pos - EyePos()):Angle()
+  angle = Angle(angle.p, angle.y, 0)
+  angle.y = angle.y + (10 * math.sin(CurTime()))
+
+  local calculated = {
+    player = ply,
+    playerPos = pos,
+    textAngle = angle
+  }
+
+  -- Pass the table to hooks.
+  -- If something returned `true`, pass.
+  if true == hook.Call("GMAU CalcNicknames", nil, calculated) then return end
+  -- Rotation shenanigans.
+  calculated.textAngle:RotateAroundAxis(calculated.textAngle:Up(), -90)
+  calculated.textAngle:RotateAroundAxis(calculated.textAngle:Forward(), 90)
+  -- Draw the actual 3D2D text above the player in question.
+  cam.Start3D2D(calculated.playerPos, calculated.textAngle, 0.075)
+  -- Draw a "better" outline.
+  local passes = 4
+
+  for i = -passes / 2, passes / 2 do
+    for j = -passes / 2, passes / 2 do
+      if i == 0 or j == 0 then continue end
+      local offsetX = 2 * i
+      local offsetY = 2 * j
+      draw.SimpleText(ply:Nick(), "NMW AU Floating Nickames", offsetX, offsetY, color_black, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+    end
+  end
+
+  local team = roleselection.teams[ply]
+  draw.SimpleText(ply:Nick(), "NMW AU Floating Nickames", 0, 0, team and team.color or Color(255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+  cam.End3D2D()
+end)

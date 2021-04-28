@@ -8,6 +8,7 @@
     -- add all clientside and shared scripts
     AddCSLuaFile("moreroles/cl_gm_overwrites.lua")
     AddCSLuaFile("moreroles/cl_hud_overwrites.lua")
+    AddCSLuaFile("moreroles/cl_render_overwrites.lua")
     AddCSLuaFile("moreroles/cl_roleselection.lua")
     AddCSLuaFile("moreroles/sh_gm_overwrites.lua")
     AddCSLuaFile("moreroles/sh_player_ext.lua")
@@ -22,6 +23,7 @@
     -- include all clientside scripts
     include("moreroles/cl_gm_overwrites.lua")
     include("moreroles/cl_hud_overwrites.lua")
+    include("moreroles/cl_render_overwrites.lua")
     include("moreroles/cl_roleselection.lua")
   end
 
