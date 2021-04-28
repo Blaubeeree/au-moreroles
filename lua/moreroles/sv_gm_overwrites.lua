@@ -186,7 +186,7 @@ function GAMEMODE:Game_StartRound(first)
   oldStartRound(self, first)
 
   if not first then
-    for ply in pairs(self.GameData.PlayerTables) do
+    for _, ply in pairs(self.GameData.PlayerTables) do
       if ply.entity:GetRole().CanKill then
         self:Player_RefreshKillCooldown(ply, first and 10 or nil)
       end

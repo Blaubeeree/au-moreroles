@@ -1,4 +1,4 @@
-roleselection = roleselection or {}
+﻿roleselection = roleselection or {}
 roleselection.selectableRoles = roleselection.selectableRoles or {}
 roleselection.roles = roleselection.roles or {}
 roleselection.teams = roleselection.teams or {}
@@ -134,7 +134,10 @@ function roleselection.SelectRoles(plyTables)
       selectableRoles[role.id] = math.min(role.cvars.max:GetInt(), math.floor(role.cvars.pct:GetFloat() * plyCount))
     end
 
-    if (not base or selectableRoles[base.id] > 0 or base == CREWMATE) and (selectableRoles[role.id] > 0 or role == CREWMATE) and plyKey then
+    if role == CREWMATE and plyKey then
+      SetRole(plyTable, role)
+      table.remove(plyTables, plyKey)
+    elseif (not base or selectableRoles[base.id] > 0) and selectableRoles[role.id] > 0 and plyKey then
       SetRole(plyTable, role)
 
       if base then
