@@ -24,7 +24,7 @@
     -- Bail if we don't have enough players. Again.
     -- TO-DO: print chat message.
     if #initializedPlayers < GAMEMODE.ConVars.MinPlayers:GetInt() then return end
-    hook.Call("GAMEMODEAU PreGameStart")
+    hook.Call("GMAU PreGameStart")
     -- Create the time limit timer if the cvar is set.
     -- That's quite an interesting sentence.
     local timelimit = GAMEMODE.ConVarSnapshots.TimeLimit:GetInt()
@@ -174,7 +174,7 @@
           table.insert(GAMEMODE.GameData.Imposters[ply] and hookImposters or hookCrewmates, ply.entity)
         end
 
-        hook.Call("GAMEMODEAU GameStart", nil, hookCrewmates, hookImposters)
+        hook.Call("GMAU GameStart", nil, hookCrewmates, hookImposters)
       end)
     end)
   end)
