@@ -54,11 +54,11 @@
         steamid = ply:SteamID(),
         nickname = ply:Nick(),
         entity = ply,
-        id = i - 1
+        id = i
       }
 
       table.insert(GAMEMODE.GameData.PlayerTables, t)
-      GAMEMODE.GameData.Lookup_PlayerByID[i - 1] = t
+      GAMEMODE.GameData.Lookup_PlayerByID[i] = t
       GAMEMODE.GameData.Lookup_PlayerByEntity[ply] = t
     end
 
