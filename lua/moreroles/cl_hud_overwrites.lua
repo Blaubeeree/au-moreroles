@@ -746,3 +746,10 @@ function GAMEMODE:HUD_DisplayShush()
     self.__splash = splashPanel
   end
 end
+
+local oldInitializeImposterMap = GAMEMODE.HUD_InitializeImposterMap
+
+function GAMEMODE:HUD_InitializeImposterMap()
+  if not LocalPlayer():GetRole().CanSabotage then return end
+  oldInitializeImposterMap(self)
+end
