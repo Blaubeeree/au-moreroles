@@ -1,4 +1,4 @@
-GM = GAMEMODE
+﻿GM = GAMEMODE
 local VGUI_SPLASH = include("amongus/gamemode/vgui/vgui_splash.lua")
 GM = nil
 
@@ -752,4 +752,125 @@ local oldInitializeImposterMap = GAMEMODE.HUD_InitializeImposterMap
 function GAMEMODE:HUD_InitializeImposterMap()
   if not LocalPlayer():GetRole().CanSabotage then return end
   oldInitializeImposterMap(self)
+end
+
+local oldDisplayMeeting = GAMEMODE.HUD_DisplayMeeting
+local oldOpenDiscuss
+
+function GAMEMODE:HUD_DisplayMeeting(caller, bodyColor)
+  oldDisplayMeeting(self, caller, bodyColor)
+  oldOpenDiscuss = oldOpenDiscuss or GAMEMODE.Hud.Meeting.OpenDiscuss
+
+  function GAMEMODE.Hud.Meeting:OpenDiscuss(caller2, time)
+    oldOpenDiscuss(self, caller2, time)
+
+    for plyID, voteItem in pairs(GAMEMODE.Hud.Meeting.__voteItems) do
+      if plyID == 0 then continue end
+      local nicknameLabel = voteItem:GetChild(1):GetChild(0)
+      local ply = GAMEMODE.GameData.Lookup_PlayerByID[plyID].entity
+      nicknameLabel:SetColor(roleselection.roles[ply] and roleselection.roles[ply].color or Color(255, 255, 255))
+    end
+
+    function GAMEMODE.Hud.Meeting.__chatOverlay:PushMessage(dock, ply, msg)
+      local _, tabletHeight = GAMEMODE.Render.FitMaterial(Material("au/gui/meeting/voting_screen.png", "smooth"), GAMEMODE.Hud.Meeting:GetWide(), GAMEMODE.Hud.Meeting:GetTall())
+      tabletHeight = tabletHeight * 0.9
+      local playerIconMargin = tabletHeight * 0.01
+      local shadowOffset = tabletHeight * 0.006
+      local shadowColor = Color(0, 0, 0, 100)
+      local itemColor = Color(255, 255, 255)
+      local itemColorDead = Color(220, 220, 220)
+      local chatArea = GAMEMODE.Hud.Meeting.__chatOverlay:GetChild(0):GetChild(0)
+      local shouldScroll = chatArea:GetTall() + chatArea:GetVBar():GetScroll() > chatArea:GetCanvas():GetTall() - (chatArea:GetTall() / 4)
+      local children = chatArea:GetCanvas():GetChildren()
+
+      if #children > GAMEMODE.ClientSideConVars.MaxChatMessages:GetInt() then
+        children[1]:Remove()
+      end
+
+      local playerTable = IsValid(ply) and ply:GetAUPlayerTable() or nil
+      local targetColor = (playerTable and IsValid(playerTable.entity) and not GAMEMODE.GameData.DeadPlayers[playerTable]) and itemColor or itemColorDead
+      local voted = playerTable and GAMEMODE.Hud.Meeting.__voted[playerTable] or false
+      -- Container.
+      local container = chatArea:Add("Panel")
+      container:Dock(TOP)
+      container:DockMargin(dock == RIGHT and chatLineDockMargin or 0, 0, dock == LEFT and chatLineDockMargin or 0, shadowOffset * 2)
+      container:SetAlpha(0)
+      container.Color = targetColor
+
+      function container:Paint(w, h)
+        local scissorX1, scissorY1 = chatArea:LocalToScreen(0, 0)
+        local scissorX2 = scissorX1 + chatArea:GetWide()
+        local scissorY2 = scissorY1 + chatArea:GetTall()
+        render.SetScissorRect(scissorX1, scissorY1, scissorX2, scissorY2, true)
+        surface.DisableClipping(true)
+        draw.RoundedBox(16, shadowOffset, shadowOffset, w, h, shadowColor)
+        surface.DisableClipping(false)
+        render.SetScissorRect(0, 0, 0, 0, false)
+        draw.RoundedBox(16, 0, 0, w, h, self.Color or itemColor)
+      end
+
+      if playerTable then
+        -- Crewmate icon container.
+        local iconContainer = container:Add("Panel")
+        iconContainer:Dock(LEFT)
+        iconContainer:SetWide(playerIconWidth)
+        iconContainer:DockMargin(playerIconMargin, playerIconMargin, 0, playerIconMargin)
+        -- Crewmate icon.
+        local icon = iconContainer:Add("AmongUsCrewmate")
+        icon:Dock(TOP)
+        icon:SetSize(playerIconWidth, playerIconWidth)
+        icon:SetColor(playerTable.color)
+
+        if targetColor ~= itemColor or voted then
+          -- Optional "modifier"-kind-of icon.
+          local iconMod = icon:Add("DImage")
+          iconMod:SetMaterial(voted and Material("au/gui/meeting/voted.png", "smooth") or Material("au/gui/meeting/kil.png", "smooth"))
+          iconMod:Dock(FILL)
+          iconMod:DockMargin(playerIconWidth * 0.02, playerIconWidth * 0.48, playerIconWidth * 0.48, playerIconWidth * 0.02)
+        end
+      end
+
+      -- Nickname label.
+      local nicknameLabel = container:Add("DOutlinedLabel")
+      nicknameLabel:Dock(TOP)
+      nicknameLabel:DockMargin(shadowOffset + playerIconMargin, shadowOffset, shadowOffset, shadowOffset)
+      nicknameLabel:SetColor(roleselection.roles[ply] and roleselection.roles[ply].color or Color(255, 255, 255))
+      nicknameLabel:SetFont("NMW AU Meeting Chat Nickname")
+      nicknameLabel:SetText(playerTable and playerTable.nickname or (IsValid(ply) and ply:Nick() or "Console"))
+      nicknameLabel:SetTall(ScreenScale(14))
+      nicknameLabel:SetContentAlignment(4)
+      -- Text label.
+      local textLabel = container:Add("DLabel")
+      textLabel:SetColor(Color(0, 0, 0))
+      textLabel:SetFont("NMW AU Meeting Chat")
+      textLabel:SetText(msg)
+      textLabel:SetWrap(true)
+      textLabel:SetAutoStretchVertical(true)
+
+      -- https://youtu.be/z-JRdRXiNv4
+      container:NewAnimation(0, 0, 0, function()
+        container:NewAnimation(0, 0, 0, function()
+          textLabel:SetWide(nicknameLabel:GetWide())
+          textLabel:AlignLeft(nicknameLabel:GetPos())
+          textLabel:MoveBelow(nicknameLabel)
+          textLabel:InvalidateLayout(true)
+
+          container:NewAnimation(0, 0, 0, function()
+            container:SizeToChildren(false, true)
+
+            container:NewAnimation(0, 0, 0, function()
+              container:SetTall(container:GetTall() + shadowOffset * 0.5)
+              container:AlphaTo(255, 0.1)
+
+              if shouldScroll then
+                chatArea:ScrollToChild(container)
+              end
+            end)
+          end)
+        end)
+      end)
+
+      return chatArea
+    end
+  end
 end
