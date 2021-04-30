@@ -100,7 +100,7 @@ hook.Add("PostPlayerDraw", "NMW AU Nicknames", function(ply)
     end
   end
 
-  local team = roleselection.teams[ply]
-  draw.SimpleText(ply:Nick(), "NMW AU Floating Nickames", 0, 0, team and team.color or Color(255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
+  local role = roleselection.roles[ply]
+  draw.SimpleText(ply:Nick(), "NMW AU Floating Nickames", 0, 0, role and role.color or Color(255, 255, 255), TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
   cam.End3D2D()
 end)
