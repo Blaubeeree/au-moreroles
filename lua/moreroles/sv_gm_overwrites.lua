@@ -195,6 +195,20 @@ function GAMEMODE:Game_StartRound(first)
 end
 
 function GAMEMODE:Game_CheckWin(reason)
+  if not self:IsGameInProgress() or timer.Exists("gameOver") then return end
+
+  if self:GetTimeLimit() == 0 then
+    self.Logger.Info("Game over. Crewmates have won! (time out)")
+    self:Game_GameOver(TEAM_CREWMATE)
+
+    return true
+  elseif self.GameData.CompletedTasks and (self.GameData.CompletedTasks >= self.GameData.TotalTasks) then
+    self.Logger.Info("Game over. Crewmates have won! (task win)")
+    self:Game_GameOver(TEAM_CREWMATE)
+
+    return true
+  end
+
   local numRoles = {}
   local rolesCanKill = {}
   local totalPlayers = 0
