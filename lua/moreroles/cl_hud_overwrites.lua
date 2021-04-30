@@ -1,5 +1,4 @@
-﻿GM = GAMEMODE
-local VGUI_HUD = include("amongus/gamemode/vgui/vgui_hud.lua")
+GM = GAMEMODE
 local VGUI_SPLASH = include("amongus/gamemode/vgui/vgui_splash.lua")
 GM = nil
 
@@ -19,7 +18,7 @@ local COLOR_RED = Color(220, 32, 32)
 local COLOR_GREEN = Color(32, 255, 32)
 local COLOR_YELLOW = Color(255, 255, 30)
 
-function VGUI_HUD:SetupButtons(state, impostor)
+local function SetupButtons(self, state, impostor)
   local localPlayerTable = GAMEMODE.GameData.Lookup_PlayerByEntity[LocalPlayer()]
   local localPlayerRole = LocalPlayer():GetRole()
   local localPlayerTeam = LocalPlayer():GetTeam()
@@ -709,21 +708,11 @@ function VGUI_SPLASH:DisplayPlayers(reason)
   end)
 end
 
+local oldHudReset = GAMEMODE.HUD_Reset
+
 function GAMEMODE:HUD_Reset()
-  if IsValid(self.__splash) then
-    self.__splash:Remove()
-  end
-
-  if IsValid(self.Hud) then
-    self.Hud:Remove()
-  end
-
-  self.Hud = vgui.CreateFromTable(VGUI_HUD)
-  self.Hud:SetPaintedManually(true)
-
-  if self.MapManifest then
-    self:HUD_InitializeMap()
-  end
+  oldHudReset(self)
+  GAMEMODE.Hud.SetupButtons = SetupButtons
 
   if LocalPlayer():GetRole().CanSabotage then
     self:HUD_InitializeImposterMap()
