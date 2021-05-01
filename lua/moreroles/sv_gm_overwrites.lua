@@ -209,7 +209,7 @@ function GAMEMODE:Game_CheckWin(reason)
     return true
   end
 
-  local numRoles = {}
+  local teamsAlive = {}
   local rolesCanKill = {}
   local totalPlayers = 0
 
@@ -219,7 +219,9 @@ function GAMEMODE:Game_CheckWin(reason)
       local team = ply.entity:GetTeam()
 
       if ply.entity:GetRole().ShowTeammates then
-        numRoles[team] = numRoles[team] and numRoles[team] + 1 or 1
+        teamsAlive[team] = teamsAlive[team] and teamsAlive[team] + 1 or 1
+      else
+        teamsAlive[team] = teamsAlive[team] or 0
       end
 
       if ply.entity:GetRole().CanKill then
@@ -231,7 +233,31 @@ function GAMEMODE:Game_CheckWin(reason)
   end
 
   -- check if a team has won
-  for team, num in pairs(numRoles) do
+  if table.Count(teamsAlive) == 1 then
+    local team = teamsAlive[1]
+    local teamName = string.upper(team.name[1]) .. string.sub(team.name, 2)
+    self.Logger.Info("Game over. " .. teamName .. "s have won!")
+    self:Game_GameOver(team.id)
+
+    return true
+  end
+
+  -- hook tells if team has won because of e.g. a custom win condition
+  for name, team in pairs(roles.GetTeams()) do
+    local shouldWin = hook.Run("GMAU ShouldWin", team)
+
+    if shouldWin == true then
+      local teamName = string.upper(team.name[1]) .. string.sub(team.name, 2)
+      self.Logger.Info("Game over. " .. teamName .. "s have won!")
+      self:Game_GameOver(team.id)
+
+      return true
+    elseif shouldWin == false then
+      teamsAlive[team] = nil
+    end
+  end
+
+  for team, num in pairs(teamsAlive) do
     -- team wins if it has half or more of the living players
     if num >= totalPlayers / 2 then
       -- if team has exactly half of the players they only won if no other player can kill them
@@ -424,20 +450,20 @@ util.AddNetworkString("AU RevealRoles")
 local oldBroadcastGameOver = GAMEMODE.Net_BroadcastGameOver
 
 function GAMEMODE:Net_BroadcastGameOver(reason)
-  local roles = {}
-  local teams = {}
+  local roleIDs = {}
+  local teamIDs = {}
 
   for ply, role in pairs(roleselection.roles) do
-    roles[ply] = role.id
+    roleIDs[ply] = role.id
   end
 
   for ply, team in pairs(roleselection.teams) do
-    teams[ply] = team.id
+    teamIDs[ply] = team.id
   end
 
   net.Start("AU RevealRoles")
-  net.WriteTable(roles)
-  net.WriteTable(teams)
+  net.WriteTable(roleIDs)
+  net.WriteTable(teamIDs)
   net.Broadcast()
   oldBroadcastGameOver(self, reason)
 end

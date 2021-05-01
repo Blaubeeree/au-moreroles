@@ -23,6 +23,7 @@ local function GetSelectableRoles(update)
     end
   end
 
+  hook.Run("GMAU ModifySelectableRoles", selectableRoles)
   roleselection.selectableRoles = selectableRoles
 
   return selectableRoles

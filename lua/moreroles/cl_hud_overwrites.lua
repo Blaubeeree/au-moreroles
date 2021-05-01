@@ -490,6 +490,8 @@ local function SetupButtons(self, state, impostor)
       draw.SimpleTextOutlined(localPlayerTable.nickname or "", "NMW AU Taskbar", w / 2, -size * 0.1, textColor, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER, 2, Color(0, 0, 0, 160))
       surface.DisableClipping(false)
     end
+
+    hook.Run("GMAU ModifyButtons", self)
   end
 end
 
