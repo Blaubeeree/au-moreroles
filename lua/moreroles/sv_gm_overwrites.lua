@@ -233,15 +233,6 @@ function GAMEMODE:Game_CheckWin(reason)
   end
 
   -- check if a team has won
-  if table.Count(teamsAlive) == 1 then
-    local team = teamsAlive[1]
-    local teamName = string.upper(team.name[1]) .. string.sub(team.name, 2)
-    self.Logger.Info("Game over. " .. teamName .. "s have won!")
-    self:Game_GameOver(team.id)
-
-    return true
-  end
-
   -- hook tells if team has won because of e.g. a custom win condition
   for name, team in pairs(roles.GetTeams()) do
     local shouldWin = hook.Run("GMAU ShouldWin", team)
@@ -255,6 +246,16 @@ function GAMEMODE:Game_CheckWin(reason)
     elseif shouldWin == false then
       teamsAlive[team] = nil
     end
+  end
+
+  -- if there is only one team left they win
+  if table.Count(teamsAlive) == 1 then
+    local team = table.GetKeys(teamsAlive)[1]
+    local teamName = string.upper(team.name[1]) .. string.sub(team.name, 2)
+    self.Logger.Info("Game over. " .. teamName .. "s have won!")
+    self:Game_GameOver(team.id)
+
+    return true
   end
 
   for team, num in pairs(teamsAlive) do

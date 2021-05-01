@@ -776,6 +776,7 @@ function GAMEMODE:HUD_DisplayMeeting(caller, bodyColor)
     function GAMEMODE.Hud.Meeting.__chatOverlay:PushMessage(dock, ply, msg)
       local _, tabletHeight = GAMEMODE.Render.FitMaterial(Material("au/gui/meeting/voting_screen.png", "smooth"), GAMEMODE.Hud.Meeting:GetWide(), GAMEMODE.Hud.Meeting:GetTall())
       tabletHeight = tabletHeight * 0.9
+      local playerIconWidth  = tabletHeight * 0.07
       local playerIconMargin = tabletHeight * 0.01
       local shadowOffset = tabletHeight * 0.006
       local shadowColor = Color(0, 0, 0, 100)
