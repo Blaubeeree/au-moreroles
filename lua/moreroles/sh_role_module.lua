@@ -4,6 +4,10 @@ local rolesFiles = file.Find(rolesPath .. "*.lua", "LUA")
 local _, rolesFolders = file.Find(rolesPath .. "*", "LUA")
 
 for _, fl in ipairs(rolesFiles) do
+  if string.find(fl, "%u") then
+    GAMEMODE.Logger.Error("Could not load " .. fl .. ". Do not use uppercase letters in filename!")
+  end
+
   ROLE = {}
   ROLE.name = string.sub(fl, 0, #fl - 4)
   AddCSLuaFile(rolesPath .. fl)

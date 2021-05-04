@@ -39,25 +39,26 @@ local function GenerateTeamID()
 end
 
 local function SetupGlobals(roleData)
-  local name = string.upper(roleData.name)
+  local name = string.Replace(string.upper(roleData.name), " ", "")
   _G["ROLE_" .. name] = roleData.id
   _G[name] = roleData
 end
 
 local function SetupConvars(roleData)
   if not roleData.notSelectable and roleData ~= CREWMATE then
+    local name = string.Replace(string.lower(roleData.name), " ", "_")
     roleData.cvars = roleData.cvars or {}
 
-    roleData.cvars.pct = CreateConVar("au_" .. roleData.name .. "_pct", tostring(roleData.defaultCVarData.pct or 1), {FCVAR_NOTIFY, FCVAR_ARCHIVE}, "", 0, 1)
+    roleData.cvars.pct = CreateConVar("au_" .. name .. "_pct", tostring(roleData.defaultCVarData.pct or 1), {FCVAR_NOTIFY, FCVAR_ARCHIVE}, "", 0, 1)
 
     if roleData ~= IMPOSTER then
-      roleData.cvars.max = CreateConVar("au_" .. roleData.name .. "_max", tostring(roleData.defaultCVarData.max or 1), {FCVAR_NOTIFY, FCVAR_ARCHIVE})
+      roleData.cvars.max = CreateConVar("au_" .. name .. "_max", tostring(roleData.defaultCVarData.max or 1), {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 
-      roleData.cvars.minPlayers = CreateConVar("au_" .. roleData.name .. "_min_players", tostring(roleData.defaultCVarData.minPlayers or 1), {FCVAR_NOTIFY, FCVAR_ARCHIVE})
+      roleData.cvars.minPlayers = CreateConVar("au_" .. name .. "_min_players", tostring(roleData.defaultCVarData.minPlayers or 1), {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 
-      roleData.cvars.random = CreateConVar("au_" .. roleData.name .. "_random", tostring(roleData.defaultCVarData.random or 100), {FCVAR_NOTIFY, FCVAR_ARCHIVE}, "", 0, 100)
+      roleData.cvars.random = CreateConVar("au_" .. name .. "_random", tostring(roleData.defaultCVarData.random or 100), {FCVAR_NOTIFY, FCVAR_ARCHIVE}, "", 0, 100)
 
-      roleData.cvars.enabled = CreateConVar("au_" .. roleData.name .. "_enabled", "1", {FCVAR_NOTIFY, FCVAR_ARCHIVE}, "", 0, 1)
+      roleData.cvars.enabled = CreateConVar("au_" .. name .. "_enabled", "1", {FCVAR_NOTIFY, FCVAR_ARCHIVE}, "", 0, 1)
     else
       roleData.cvars.max = GAMEMODE.ConVars.ImposterCount
     end
@@ -93,9 +94,9 @@ end
 --  (for convenience should equal the name of the role it belongs to)
 -- @param Table data The data of the new team
 function CreateTeam(name, data)
-  data.name = string.lower(name)
+  data.name = string.Replace(string.lower(name), " ", "_")
   data.id = data.id or GenerateTeamID()
-  _G["TEAM_" .. string.upper(name)] = data.id
+  _G["TEAM_" .. string.Replace(string.upper(data.name), "_", "")] = data.id
   TeamsByName[data.name] = data
   TeamsByID[data.id] = data
 end
