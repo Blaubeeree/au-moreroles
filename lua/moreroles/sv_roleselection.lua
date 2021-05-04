@@ -1,4 +1,4 @@
-﻿roleselection = roleselection or {}
+roleselection = roleselection or {}
 roleselection.selectableRoles = roleselection.selectableRoles or {}
 roleselection.roles = roleselection.roles or {}
 roleselection.teams = roleselection.teams or {}
@@ -76,14 +76,26 @@ local function BroadcastRoles()
   end
 end
 
+---
+-- Forces a player to become a specific role next round
+-- Only works if the role is active
+-- @param Player ply The player to force
+-- @param ROLE role The role the player should get
 function roleselection.ForceRole(ply, role)
   forcedRoles[ply] = role
 end
 
+---
+-- Returns a list of all active roles
+-- @returns table
 function roleselection.GetSelectableRoles()
   GetSelectableRoles(false)
 end
 
+---
+-- Set the role of a player
+-- @param Player ply The player that should get the role
+-- @param ROLE role The role the player should get
 function roleselection.SetRole(ply, role)
   local oldRole = ply:GetRole()
   SetRole(ply, role)
@@ -99,6 +111,10 @@ function roleselection.SetRole(ply, role)
   BroadcastRoles()
 end
 
+---
+-- Set the team of a player
+-- @param Player ply The player that should join the team
+-- @param TEAM team The team the player should join
 function roleselection.SetTeam(ply, team)
   if type(ply.entity) == "Player" then
     ply = ply.entity
@@ -110,6 +126,11 @@ function roleselection.SetTeam(ply, team)
   BroadcastRoles()
 end
 
+---
+-- Give the players their role
+-- Don't call this function unless you exactly know what you are doing!
+-- @param table plyTables A table with PlayerTables of all players that should get a role
+--  if nil uses all existing PlayerTables
 function roleselection.SelectRoles(plyTables)
   if GAMEMODE:IsGameInProgress() then return end
   plyTables = plyTables or table.Add({}, GAMEMODE.GameData.PlayerTables)

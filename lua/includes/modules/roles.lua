@@ -64,6 +64,10 @@ local function SetupConvars(roleData)
   end
 end
 
+---
+-- Registers a new role
+-- @param String name The name of the new role (must be unique)
+-- @param Table data The data of the new role
 function Register(name, data)
   name = string.lower(name)
   if RolesByName[name] then return end
@@ -83,6 +87,11 @@ function Register(name, data)
   GAMEMODE.Logger.Info("Added '" .. data.name .. "' role (ID: " .. data.id .. ")")
 end
 
+---
+-- Creates a new team
+-- @param String name The name of the new team
+--  (for convenience should equal the name of the role it belongs to)
+-- @param Table data The data of the new team
 function CreateTeam(name, data)
   data.name = string.lower(name)
   data.id = data.id or GenerateTeamID()
@@ -91,44 +100,70 @@ function CreateTeam(name, data)
   TeamsByID[data.id] = data
 end
 
-function SetBaseRole(roleTable, baserole)
+---
+-- Sets the baserole for a subrole
+-- @param ROLE role The role that baserole should be set
+-- @param ROLE baserole The role the baserole should be set to (must not be a subrole or CREWMATE)
+function SetBaseRole(role, baserole)
   baserole = RolesByID[baserole] or baserole
 
   if baserole == CREWMATE then
-    GAMEMODE.Logger.Error("BaseRole of" .. roleTable.name .. " can't be set to crewmate!")
-  elseif roleTable.baserole then
-    GAMEMODE.Logger.Error("BaseRole of " .. roleTable.name .. " already set (" .. roleTable.baserole.name .. ")!")
-  elseif roleTable.id == baserole.id then
-    GAMEMODE.Logger.Error("BaseRole " .. roleTable.name .. " can't be a baserole of itself!")
+    GAMEMODE.Logger.Error("BaseRole of" .. role.name .. " can't be set to crewmate!")
+  elseif role.baserole then
+    GAMEMODE.Logger.Error("BaseRole of " .. role.name .. " already set (" .. role.baserole.name .. ")!")
+  elseif role.id == baserole.id then
+    GAMEMODE.Logger.Error("BaseRole " .. role.name .. " can't be a baserole of itself!")
   elseif baserole.baserole then
     GAMEMODE.Logger.Error("Your requested BaseRole can't be any BaseRole of another SubRole because it's a SubRole as well.")
   else
-    roleTable.baserole = baserole
-    roleTable.defaultTeam = baserole.defaultTeam
-    GAMEMODE.Logger.Info("Connected '" .. roleTable.name .. "' subrole with baserole '" .. baserole.name .. "'")
+    role.baserole = baserole
+    role.defaultTeam = baserole.defaultTeam
+    GAMEMODE.Logger.Info("Connected '" .. role.name .. "' subrole with baserole '" .. baserole.name .. "'")
   end
 end
 
+---
+-- Returns a list of all roles
+-- @return table
 function GetList()
   return RolesByName
 end
 
+---
+-- Returns a list of all teams
+-- @return table
 function GetTeams()
   return TeamsByName
 end
 
+---
+-- Returns a role by their name
+-- @param name The name of the role
+-- @return ROLE
 function GetByName(name)
   return RolesByName[name]
 end
 
+---
+-- Returns a role by their id
+-- @param id The id of the role
+-- @return ROLE
 function GetByID(id)
   return RolesByID[id]
 end
 
+---
+-- Returns a team by their name
+-- @param name The name of the role
+-- @return TEAM
 function GetTeamByName(name)
   return TeamsByName[name]
 end
 
+---
+-- Returns a team by their id
+-- @param id The id of the role
+-- @return TEAM
 function GetTeamByID(id)
   return TeamsByID[id]
 end
