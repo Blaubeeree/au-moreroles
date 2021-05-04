@@ -1,4 +1,4 @@
-roleselection = roleselection or {}
+﻿roleselection = roleselection or {}
 roleselection.selectableRoles = roleselection.selectableRoles or {}
 roleselection.roles = roleselection.roles or {}
 roleselection.teams = roleselection.teams or {}
@@ -97,6 +97,7 @@ end
 -- @param Player ply The player that should get the role
 -- @param ROLE role The role the player should get
 function roleselection.SetRole(ply, role)
+  if not GAMEMODE:IsGameInProgress() then return end
   local oldRole = ply:GetRole()
   SetRole(ply, role)
 
@@ -116,6 +117,8 @@ end
 -- @param Player ply The player that should join the team
 -- @param TEAM team The team the player should join
 function roleselection.SetTeam(ply, team)
+  if not GAMEMODE:IsGameInProgress() then return end
+
   if type(ply.entity) == "Player" then
     ply = ply.entity
   elseif type(ply) ~= "Player" then
