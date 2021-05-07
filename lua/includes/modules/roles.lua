@@ -15,7 +15,7 @@ local defaultSettings = {
   CanSabotage = false,
   CanVent = false,
   HasTasks = true,
-  ShowTeammates = true
+  ShowTeammates = false
 }
 
 local function GenerateRoleID()
@@ -96,6 +96,7 @@ end
 function CreateTeam(name, data)
   data.name = string.Replace(string.lower(name), " ", "_")
   data.id = data.id or GenerateTeamID()
+  data.color = data.color or Color(0, 0, 0)
   _G["TEAM_" .. string.Replace(string.upper(data.name), "_", "")] = data.id
   TeamsByName[data.name] = data
   TeamsByID[data.id] = data

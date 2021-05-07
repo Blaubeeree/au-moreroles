@@ -16,6 +16,10 @@ for _, fl in ipairs(rolesFiles) do
 end
 
 for _, folder in ipairs(rolesFolders) do
+  if string.find(folder, "%u") then
+    GAMEMODE.Logger.Error("Could not load " .. folder .. ". Do not use uppercase letters in foldername!")
+  end
+
   ROLE = {}
   ROLE.name = folder
 

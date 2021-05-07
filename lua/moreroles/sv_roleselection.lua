@@ -131,7 +131,7 @@ end
 
 ---
 -- Give the players their role
--- Don't call this function unless you exactly know what you are doing!
+-- Don't call this function unless you know what you are doing!
 -- @param table plyTables A table with PlayerTables of all players that should get a role
 --  if nil uses all existing PlayerTables
 function roleselection.SelectRoles(plyTables)
