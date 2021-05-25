@@ -11,6 +11,7 @@ ROLE.CanKill = true
 ROLE.CanSabotage = true
 ROLE.CanVent = true
 ROLE.HasTasks = false
+ROLE.ShowTeammates = true
 
 ROLE.defaultCVarData = {
   pct = 0.29,
