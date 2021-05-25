@@ -19,7 +19,7 @@ local function GetSelectableRoles(update)
       and role.cvars.minPlayers:GetInt() <= plyCount
       and role.cvars.random:GetInt() >= math.random(100))
     then
-      selectableRoles[role.id] = math.min(role.cvars.max:GetInt(), math.floor(role.cvars.pct:GetFloat() * plyCount))
+      selectableRoles[role.id] = math.Clamp(math.floor(role.cvars.pct:GetFloat() * plyCount), 1, role.cvars.max:GetInt())
     end
   end
 
