@@ -80,7 +80,7 @@
     local colorRounds = math.ceil(#GAMEMODE.GameData.PlayerTables / #GAMEMODE.Colors)
 
     for round = 1, colorRounds do
-      local colors = GAMEMODE.Colors
+      local colors = table.Copy(GAMEMODE.Colors)
       local slicedPlayers = {}
       local lowerBound = 1 + (round - 1) * #GAMEMODE.Colors
       local upperBound = round * #GAMEMODE.Colors
