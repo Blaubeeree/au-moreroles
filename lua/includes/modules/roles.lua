@@ -45,7 +45,7 @@ local function SetupGlobals(roleData)
 end
 
 local function SetupConvars(roleData)
-  if not roleData.notSelectable and roleData ~= CREWMATE then
+  if roleData ~= CREWMATE then
     local name = string.Replace(string.lower(roleData.name), " ", "_")
     roleData.cvars = roleData.cvars or {}
 
