@@ -1,5 +1,8 @@
 [steam-workshop]: https://steamcommunity.com/sharedfiles/filedetails/?id=2476816620
 
+# Update 2022-09-13
+Archiving this project because [Garry's Mod Among Us](https://github.com/NotMyWing/GarrysModAmongUs) seems to be inactive and my addon is honestly very messy (I'll maybe rewrite it some day if I'm bored :D).
+
 # More Roles for Among Us
 
 [![Steam Subscriptions](https://img.shields.io/steam/subscriptions/2476816620?logo=steam)][steam-workshop]
